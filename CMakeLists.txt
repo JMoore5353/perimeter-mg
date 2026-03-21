@@ -12,6 +12,8 @@ add_library(perimeter_geometry
     src/core/WorldState.cpp
     src/environment/Movement.cpp
     src/environment/Transition.cpp
+    src/environment/Simulator.cpp
+    src/environment/Initialization.cpp
 )
 
 target_include_directories(perimeter_geometry
@@ -42,6 +44,8 @@ add_executable(geometry_tests
     tests/world_state_test.cpp
     tests/movement_test.cpp
     tests/transition_test.cpp
+    tests/initialization_test.cpp
+    tests/simulator_test.cpp
 )
 
 target_link_libraries(geometry_tests
