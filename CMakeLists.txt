@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(perimeter_geometry
     src/geometry/Hex.cpp
     src/geometry/HexGrid.cpp
+    src/core/WorldState.cpp
 )
 
 target_include_directories(perimeter_geometry
@@ -36,6 +37,7 @@ endif()
 
 add_executable(geometry_tests
     tests/hex_geometry_test.cpp
+    tests/world_state_test.cpp
 )
 
 target_link_libraries(geometry_tests
