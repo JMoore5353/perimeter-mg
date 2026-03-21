@@ -49,9 +49,12 @@ RewardById initializeRewardById(const core::WorldState& world) {
     return rewardById;
 }
 
-void applyDefenderMovementPenalty(const core::WorldState& world, RewardById& rewardById) {
-    for (const core::AgentState& agent : world.agents) {
-        if (agent.type == core::AgentType::DEFENDER) {
+void applyDefenderMovementPenalty(const core::WorldState& world,
+                                  const std::vector<Action>& jointActions,
+                                  RewardById& rewardById) {
+    for (std::size_t index = 0; index < world.agents.size(); ++index) {
+        const core::AgentState& agent = world.agents[index];
+        if (agent.type == core::AgentType::DEFENDER && jointActions[index] != Action::STAY) {
             rewardById[agent.id] -= 0.1;
         }
     }
@@ -235,7 +238,7 @@ StepResult stepWorld(core::WorldState& world,
 
     // 1-4: collect, compute, apply moves
     applySimultaneousMoves(world, jointActions, grid, rng);
-    applyDefenderMovementPenalty(world, rewardById);
+    applyDefenderMovementPenalty(world, jointActions, rewardById);
 
     IdSet capturedIds;
     IdSet baseArrivalIds;

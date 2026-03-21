@@ -79,7 +79,7 @@ TEST(TransitionTest, DefenderOnBaseGetsPenalty) {
     const StepResult result = stepWorld(world, actions, grid, rng);
 
     ASSERT_EQ(result.rewards.size(), 1U);
-    EXPECT_DOUBLE_EQ(result.rewards[0], -10.1);
+    EXPECT_DOUBLE_EQ(result.rewards[0], -10.0);
     EXPECT_TRUE(result.baseArrivalAttackerIds.empty());
     EXPECT_TRUE(result.capturedAttackerIds.empty());
 }
@@ -104,9 +104,9 @@ TEST(TransitionTest, ThreeDefendersPreventCapture) {
 
     ASSERT_EQ(result.rewards.size(), 4U);
     EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
-    EXPECT_DOUBLE_EQ(result.rewards[1], -0.1);
-    EXPECT_DOUBLE_EQ(result.rewards[2], -0.1);
-    EXPECT_DOUBLE_EQ(result.rewards[3], -0.1);
+    EXPECT_DOUBLE_EQ(result.rewards[1], 0.0);
+    EXPECT_DOUBLE_EQ(result.rewards[2], 0.0);
+    EXPECT_DOUBLE_EQ(result.rewards[3], 0.0);
     EXPECT_TRUE(result.capturedAttackerIds.empty());
     EXPECT_TRUE(result.respawnedAttackerIds.empty());
     EXPECT_EQ(world.agents[0].position, (geometry::Hex{1, -1}));
@@ -129,8 +129,8 @@ TEST(TransitionTest, BaseBreachPenalizesAllDefenders) {
 
     ASSERT_EQ(result.rewards.size(), 3U);
     EXPECT_DOUBLE_EQ(result.rewards[0], 100.0);
-    EXPECT_DOUBLE_EQ(result.rewards[1], -100.1);
-    EXPECT_DOUBLE_EQ(result.rewards[2], -110.1);
+    EXPECT_DOUBLE_EQ(result.rewards[1], -100.0);
+    EXPECT_DOUBLE_EQ(result.rewards[2], -110.0);
 }
 
 TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender) {
@@ -151,11 +151,30 @@ TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender) {
 
     const StepResult result = stepWorld(world, actions, grid, rng);
     const double captured = static_cast<double>(result.capturedAttackerIds.size());
-    const double expectedPerDefender = (captured / 2.0) - 0.1;
+    const double expectedPerDefender = (captured / 2.0);
 
     ASSERT_EQ(result.rewards.size(), 4U);
     EXPECT_DOUBLE_EQ(result.rewards[2], expectedPerDefender);
     EXPECT_DOUBLE_EQ(result.rewards[3], expectedPerDefender);
+}
+
+TEST(TransitionTest, DefenderMovementPenaltyAppliesOnlyWhenNotStaying) {
+    core::WorldState world;
+    world.agents = {
+        core::AgentState{50, core::AgentType::ATTACKER, geometry::Hex{2, -2}},
+        core::AgentState{60, core::AgentType::DEFENDER, geometry::Hex{-1, 1}},
+    };
+    world.rebuildOccupancy();
+
+    const geometry::HexGrid grid(3);
+    std::mt19937 rng(12);
+    const std::vector<Action> actions{Action::STAY, Action::WEST};
+
+    const StepResult result = stepWorld(world, actions, grid, rng);
+
+    ASSERT_EQ(result.rewards.size(), 2U);
+    EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
+    EXPECT_DOUBLE_EQ(result.rewards[1], -0.1);
 }
 
 }  // namespace
