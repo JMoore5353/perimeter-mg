@@ -6,7 +6,7 @@
 
 #include "core/WorldState.h"
 #include "environment/Action.h"
-#include "geometry/HexGrid.h"
+#include "geometry/Grid.h"
 
 namespace perimeter::environment {
 
@@ -22,7 +22,7 @@ bool isCaptureSuccessful(std::size_t defenderCount, double roll) noexcept;
 
 StepResult stepWorld(core::WorldState& world,
                      const std::vector<Action>& jointActions,
-                     const geometry::HexGrid& grid,
+                     const geometry::Grid& grid,
                      std::mt19937& rng);
 
 }  // namespace perimeter::environment

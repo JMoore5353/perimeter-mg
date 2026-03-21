@@ -14,6 +14,8 @@ add_library(perimeter_geometry
     src/environment/Transition.cpp
     src/environment/Simulator.cpp
     src/environment/Initialization.cpp
+    src/visualization/AsciiViewer.cpp
+    src/visualization/JsonViewer.cpp
 )
 
 target_include_directories(perimeter_geometry
@@ -47,6 +49,7 @@ add_executable(geometry_tests
     tests/initialization_test.cpp
     tests/simulator_test.cpp
     tests/agent_interface_test.cpp
+    tests/visualization_test.cpp
 )
 
 target_link_libraries(geometry_tests

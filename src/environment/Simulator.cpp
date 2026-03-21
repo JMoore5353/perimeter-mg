@@ -13,7 +13,7 @@ const core::WorldState& Simulator::world() const noexcept {
     return world_;
 }
 
-const geometry::HexGrid& Simulator::grid() const noexcept {
+const geometry::Grid& Simulator::grid() const noexcept {
     return grid_;
 }
 

@@ -122,7 +122,7 @@ void applyDefenderCaptureRewards(const std::vector<CaptureRecord>& records, Rewa
     }
 }
 
-std::unordered_set<geometry::Hex> makeBaseSet(const geometry::HexGrid& grid) {
+std::unordered_set<geometry::Hex> makeBaseSet(const geometry::Grid& grid) {
     const std::vector<geometry::Hex> baseTiles = grid.getBaseTiles();
     return std::unordered_set<geometry::Hex>(baseTiles.begin(), baseTiles.end());
 }
@@ -167,7 +167,7 @@ IdSet mergeRespawnIds(const IdSet& capturedIds, const IdSet& baseArrivalIds) {
 void respawnAttackers(core::WorldState& world,
                       const IdSet& respawnIds,
                       const IdToIndex& idToIndex,
-                      const geometry::HexGrid& grid,
+                      const geometry::Grid& grid,
                       std::mt19937& rng,
                       StepResult& result) {
     const std::vector<geometry::Hex> outerRing = grid.getOuterRing();
@@ -228,7 +228,7 @@ bool isCaptureSuccessful(std::size_t defenderCount, double roll) noexcept {
 
 StepResult stepWorld(core::WorldState& world,
                      const std::vector<Action>& jointActions,
-                     const geometry::HexGrid& grid,
+                     const geometry::Grid& grid,
                      std::mt19937& rng) {
     validateJointActions(world, jointActions);
     StepResult result;

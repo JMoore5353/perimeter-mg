@@ -2,21 +2,22 @@
 
 #include <vector>
 
+#include "geometry/Grid.h"
 #include "geometry/Hex.h"
 
 namespace perimeter::geometry {
 
-class HexGrid {
+class HexGrid : public Grid {
 public:
     explicit HexGrid(int radius, std::vector<Hex> baseTiles = {});
 
     [[nodiscard]] int radius() const noexcept;
-    [[nodiscard]] bool isValid(const Hex& cell) const noexcept;
+    [[nodiscard]] bool isValid(const Hex& cell) const noexcept override;
 
     [[nodiscard]] std::vector<Hex> getNeighbors(const Hex& cell) const;
-    [[nodiscard]] std::vector<Hex> getOuterRing() const;
-    [[nodiscard]] std::vector<Hex> getBaseTiles() const;
-    [[nodiscard]] std::vector<Hex> getGridCells() const;
+    [[nodiscard]] std::vector<Hex> getOuterRing() const override;
+    [[nodiscard]] std::vector<Hex> getBaseTiles() const override;
+    [[nodiscard]] std::vector<Hex> getGridCells() const override;
 
 private:
     [[nodiscard]] std::vector<Hex> defaultBaseTiles() const;

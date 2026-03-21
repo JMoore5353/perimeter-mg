@@ -9,6 +9,8 @@
 
 #include <gtest/gtest.h>
 
+#include "geometry/HexGrid.h"
+
 namespace perimeter::environment {
 namespace {
 

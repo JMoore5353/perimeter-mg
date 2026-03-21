@@ -7,6 +7,7 @@
 #include "core/WorldState.h"
 #include "environment/Action.h"
 #include "environment/Transition.h"
+#include "geometry/Grid.h"
 #include "geometry/HexGrid.h"
 
 namespace perimeter::environment {
@@ -18,7 +19,7 @@ public:
     StepResult step(const std::vector<Action>& jointActions);
 
     [[nodiscard]] const core::WorldState& world() const noexcept;
-    [[nodiscard]] const geometry::HexGrid& grid() const noexcept;
+    [[nodiscard]] const geometry::Grid& grid() const noexcept;
 
 private:
     geometry::HexGrid grid_;

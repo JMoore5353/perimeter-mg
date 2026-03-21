@@ -24,8 +24,8 @@ TEST(InitializationTest, CreatesRequestedAgentCountsAndValidPositions) {
 
     ASSERT_EQ(world.agents.size(), 9U);
 
-    const std::unordered_set<geometry::Hex> baseSet(
-        grid.getBaseTiles().begin(), grid.getBaseTiles().end());
+    const std::vector<geometry::Hex> baseTiles = grid.getBaseTiles();
+    const std::unordered_set<geometry::Hex> baseSet(baseTiles.begin(), baseTiles.end());
 
     int attackers = 0;
     int defenders = 0;

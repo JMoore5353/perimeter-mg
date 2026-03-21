@@ -84,7 +84,7 @@ Action sampleActionOutcome(Action intended, double roll) noexcept {
 
 geometry::Hex resolveSingleMove(const geometry::Hex& current,
                                 Action intended,
-                                const geometry::HexGrid& grid,
+                                const geometry::Grid& grid,
                                 std::mt19937& rng) {
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
     return resolveSingleMoveWithRoll(current, intended, grid, distribution(rng));
@@ -92,7 +92,7 @@ geometry::Hex resolveSingleMove(const geometry::Hex& current,
 
 geometry::Hex resolveSingleMoveWithRoll(const geometry::Hex& current,
                                         Action intended,
-                                        const geometry::HexGrid& grid,
+                                        const geometry::Grid& grid,
                                         double roll) {
     if (intended == Action::STAY) {
         return current;
@@ -119,7 +119,7 @@ geometry::Hex resolveSingleMoveWithRoll(const geometry::Hex& current,
 
 std::vector<geometry::Hex> resolveIntendedPositions(const core::WorldState& world,
                                                     const std::vector<Action>& jointActions,
-                                                    const geometry::HexGrid& grid,
+                                                    const geometry::Grid& grid,
                                                     std::mt19937& rng) {
     if (jointActions.size() != world.agents.size()) {
         throw std::invalid_argument("Joint action count must equal number of agents.");
@@ -137,7 +137,7 @@ std::vector<geometry::Hex> resolveIntendedPositions(const core::WorldState& worl
 
 void applySimultaneousMoves(core::WorldState& world,
                             const std::vector<Action>& jointActions,
-                            const geometry::HexGrid& grid,
+                            const geometry::Grid& grid,
                             std::mt19937& rng) {
     const std::vector<geometry::Hex> nextPositions = resolveIntendedPositions(world, jointActions, grid, rng);
 

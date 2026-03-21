@@ -358,7 +358,6 @@ public:
 
 Implementations:
 
-* CSVLogger
 * JSONLogger
 
 Example JSON schema:
@@ -469,6 +468,6 @@ Do not expose mutable internal structures.
 ### Recommended Workflow
 
 1. Use ConsoleRenderer for early debugging
-2. Use JSON/CSV logging for analysis and offline visualization
+2. Use JSON logging for analysis and offline visualization
 3. Add SFML renderer only if real-time visualization is needed
 
