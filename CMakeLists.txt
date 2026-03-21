@@ -11,6 +11,7 @@ add_library(perimeter_geometry
     src/geometry/HexGrid.cpp
     src/core/WorldState.cpp
     src/environment/Movement.cpp
+    src/environment/Transition.cpp
 )
 
 target_include_directories(perimeter_geometry
@@ -40,6 +41,7 @@ add_executable(geometry_tests
     tests/hex_geometry_test.cpp
     tests/world_state_test.cpp
     tests/movement_test.cpp
+    tests/transition_test.cpp
 )
 
 target_link_libraries(geometry_tests
