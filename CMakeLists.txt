@@ -46,6 +46,7 @@ add_executable(geometry_tests
     tests/transition_test.cpp
     tests/initialization_test.cpp
     tests/simulator_test.cpp
+    tests/agent_interface_test.cpp
 )
 
 target_link_libraries(geometry_tests

@@ -1,8 +1,10 @@
 #include "environment/Transition.h"
 
 #include <algorithm>
+#include <cmath>
 #include <random>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -175,6 +177,92 @@ TEST(TransitionTest, DefenderMovementPenaltyAppliesOnlyWhenNotStaying) {
     ASSERT_EQ(result.rewards.size(), 2U);
     EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
     EXPECT_DOUBLE_EQ(result.rewards[1], -0.1);
+}
+
+TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesSingleDefenderCase) {
+    constexpr int kTrials = 5000;
+    int captures = 0;
+    std::mt19937 rng(12345);
+    const geometry::HexGrid grid(3);
+
+    for (int trial = 0; trial < kTrials; ++trial) {
+        core::WorldState world;
+        world.agents = {
+            core::AgentState{1, core::AgentType::ATTACKER, geometry::Hex{2, -2}},
+            core::AgentState{2, core::AgentType::DEFENDER, geometry::Hex{2, -2}},
+        };
+        world.rebuildOccupancy();
+        const std::vector<Action> actions{Action::STAY, Action::STAY};
+
+        const StepResult result = stepWorld(world, actions, grid, rng);
+        if (!result.capturedAttackerIds.empty()) {
+            ++captures;
+        }
+    }
+
+    const double rate = static_cast<double>(captures) / static_cast<double>(kTrials);
+    EXPECT_NEAR(rate, 0.7, 0.05);
+}
+
+TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesTwoDefenderCase) {
+    constexpr int kTrials = 5000;
+    int captures = 0;
+    std::mt19937 rng(67890);
+    const geometry::HexGrid grid(3);
+
+    for (int trial = 0; trial < kTrials; ++trial) {
+        core::WorldState world;
+        world.agents = {
+            core::AgentState{1, core::AgentType::ATTACKER, geometry::Hex{2, -2}},
+            core::AgentState{2, core::AgentType::DEFENDER, geometry::Hex{2, -2}},
+            core::AgentState{3, core::AgentType::DEFENDER, geometry::Hex{2, -2}},
+        };
+        world.rebuildOccupancy();
+        const std::vector<Action> actions{Action::STAY, Action::STAY, Action::STAY};
+
+        const StepResult result = stepWorld(world, actions, grid, rng);
+        if (!result.capturedAttackerIds.empty()) {
+            ++captures;
+        }
+    }
+
+    const double rate = static_cast<double>(captures) / static_cast<double>(kTrials);
+    EXPECT_NEAR(rate, 0.99, 0.02);
+}
+
+TEST(TransitionTest, RespawnSamplingCoversOuterRingReasonablyEvenly) {
+    constexpr int kTrials = 3600;
+    std::mt19937 rng(24680);
+    const geometry::HexGrid grid(3);
+    const std::vector<geometry::Hex> outerRing = grid.getOuterRing();
+    std::unordered_map<geometry::Hex, int> counts;
+    counts.reserve(outerRing.size());
+    for (const geometry::Hex& cell : outerRing) {
+        counts[cell] = 0;
+    }
+
+    for (int trial = 0; trial < kTrials; ++trial) {
+        core::WorldState world;
+        world.agents = {
+            core::AgentState{1, core::AgentType::ATTACKER, geometry::Hex{0, 0}},
+        };
+        world.rebuildOccupancy();
+        const std::vector<Action> actions{Action::STAY};
+
+        stepWorld(world, actions, grid, rng);
+        counts[world.agents[0].position] += 1;
+    }
+
+    int minCount = kTrials;
+    int maxCount = 0;
+    for (const auto& [cell, count] : counts) {
+        (void)cell;
+        minCount = std::min(minCount, count);
+        maxCount = std::max(maxCount, count);
+    }
+
+    EXPECT_GT(minCount, 0);
+    EXPECT_LT(static_cast<double>(maxCount) / static_cast<double>(minCount), 1.5);
 }
 
 }  // namespace
