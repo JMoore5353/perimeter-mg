@@ -1,19 +1,19 @@
-#include "visualization/AsciiViewer.h"
+#include "perimeter/visualization/AsciiViewer.h"
 
 #include <algorithm>
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "core/AgentType.h"
-#include "geometry/Hex.h"
+#include "perimeter/core/AgentType.h"
+#include "perimeter/geometry/Hex.h"
 
 namespace perimeter::visualization {
 
 std::string AsciiViewer::render(const core::WorldState& state,
                                 const geometry::Grid& grid,
                                 int step,
-                                const std::vector<double>& rewards) const {
+                                const environment::StepResult& stepResult) const {
     std::unordered_map<geometry::Hex, char> cellGlyph;
     cellGlyph.reserve(grid.getGridCells().size());
     for (const geometry::Hex& cell : grid.getGridCells()) {
@@ -72,9 +72,17 @@ std::string AsciiViewer::render(const core::WorldState& state,
         out << '\n';
     }
     out << "rewards:\n";
-    const std::size_t limit = std::min(state.agents.size(), rewards.size());
+    const std::size_t limit = std::min(state.agents.size(), stepResult.rewards.size());
     for (std::size_t i = 0; i < limit; ++i) {
-        out << "  id=" << state.agents[i].id << " reward=" << rewards[i] << '\n';
+        out << "  id=" << state.agents[i].id << " reward=" << stepResult.rewards[i] << '\n';
+    }
+    out << "captured_attackers:\n";
+    for (const int id : stepResult.capturedAttackerIds) {
+        out << "  " << id << '\n';
+    }
+    out << "base_arrival_attackers:\n";
+    for (const int id : stepResult.baseArrivalAttackerIds) {
+        out << "  " << id << '\n';
     }
     return out.str();
 }

@@ -1,4 +1,4 @@
-#include "environment/Movement.h"
+#include "perimeter/environment/Movement.h"
 
 #include <random>
 #include <stdexcept>
@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "geometry/HexGrid.h"
+#include "perimeter/geometry/HexGrid.h"
 
 namespace perimeter::environment {
 namespace {

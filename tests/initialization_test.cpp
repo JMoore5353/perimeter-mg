@@ -1,11 +1,11 @@
-#include "environment/Initialization.h"
+#include "perimeter/environment/Initialization.h"
 
 #include <stdexcept>
 #include <unordered_set>
 
 #include <gtest/gtest.h>
 
-#include "geometry/Hex.h"
+#include "perimeter/geometry/Hex.h"
 
 namespace perimeter::environment {
 namespace {

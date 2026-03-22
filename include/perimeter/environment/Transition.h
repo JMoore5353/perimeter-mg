@@ -1,12 +1,13 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_ENVIRONMENT_TRANSITION_H
+#define PERIMETER_PERIMETER_ENVIRONMENT_TRANSITION_H
 
 #include <cstddef>
 #include <random>
 #include <vector>
 
-#include "core/WorldState.h"
-#include "environment/Action.h"
-#include "geometry/Grid.h"
+#include "perimeter/core/WorldState.h"
+#include "perimeter/environment/Action.h"
+#include "perimeter/geometry/Grid.h"
 
 namespace perimeter::environment {
 
@@ -26,3 +27,5 @@ StepResult stepWorld(core::WorldState& world,
                      std::mt19937& rng);
 
 }  // namespace perimeter::environment
+
+#endif  // PERIMETER_PERIMETER_ENVIRONMENT_TRANSITION_H

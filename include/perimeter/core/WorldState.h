@@ -1,10 +1,11 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_CORE_WORLDSTATE_H
+#define PERIMETER_PERIMETER_CORE_WORLDSTATE_H
 
 #include <unordered_map>
 #include <vector>
 
-#include "core/AgentState.h"
-#include "geometry/Hex.h"
+#include "perimeter/core/AgentState.h"
+#include "perimeter/geometry/Hex.h"
 
 namespace perimeter::core {
 
@@ -16,3 +17,5 @@ struct WorldState {
 };
 
 }  // namespace perimeter::core
+
+#endif  // PERIMETER_PERIMETER_CORE_WORLDSTATE_H

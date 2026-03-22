@@ -1,12 +1,12 @@
-#include "environment/Simulator.h"
+#include "perimeter/environment/Simulator.h"
 
 #include <random>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "environment/Action.h"
-#include "environment/Initialization.h"
+#include "perimeter/environment/Action.h"
+#include "perimeter/environment/Initialization.h"
 
 namespace perimeter::environment {
 namespace {

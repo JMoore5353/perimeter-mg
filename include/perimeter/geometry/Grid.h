@@ -1,8 +1,9 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_GEOMETRY_GRID_H
+#define PERIMETER_PERIMETER_GEOMETRY_GRID_H
 
 #include <vector>
 
-#include "geometry/Hex.h"
+#include "perimeter/geometry/Hex.h"
 
 namespace perimeter::geometry {
 
@@ -17,3 +18,5 @@ public:
 };
 
 }  // namespace perimeter::geometry
+
+#endif  // PERIMETER_PERIMETER_GEOMETRY_GRID_H

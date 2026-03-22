@@ -1,12 +1,12 @@
-#include "environment/Transition.h"
+#include "perimeter/environment/Transition.h"
 
 #include <cstddef>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "core/AgentType.h"
-#include "environment/Movement.h"
+#include "perimeter/core/AgentType.h"
+#include "perimeter/environment/Movement.h"
 
 namespace perimeter::environment {
 

@@ -1,8 +1,8 @@
-#include "visualization/JsonViewer.h"
+#include "perimeter/visualization/JsonViewer.h"
 
 #include <sstream>
 
-#include "core/AgentType.h"
+#include "perimeter/core/AgentType.h"
 
 namespace perimeter::visualization {
 
@@ -17,7 +17,7 @@ std::string toTypeString(core::AgentType type) {
 std::string JsonViewer::render(const core::WorldState& state,
                                const geometry::Grid& grid,
                                int step,
-                               const std::vector<double>& rewards) const {
+                               const environment::StepResult& stepResult) const {
     std::ostringstream out;
     out << "{\n";
     out << "  \"step\": " << step << ",\n";
@@ -49,7 +49,7 @@ std::string JsonViewer::render(const core::WorldState& state,
     out << "  \"agents\": [\n";
     for (std::size_t i = 0; i < state.agents.size(); ++i) {
         const core::AgentState& agent = state.agents[i];
-        const double reward = (i < rewards.size()) ? rewards[i] : 0.0;
+        const double reward = (i < stepResult.rewards.size()) ? stepResult.rewards[i] : 0.0;
         out << "    {\"id\":" << agent.id
             << ",\"type\":\"" << toTypeString(agent.type)
             << "\",\"q\":" << agent.position.q
@@ -60,7 +60,26 @@ std::string JsonViewer::render(const core::WorldState& state,
         }
         out << "\n";
     }
-    out << "  ]\n";
+    out << "  ],\n";
+
+    out << "  \"captured_attacker_ids\": [";
+    for (std::size_t i = 0; i < stepResult.capturedAttackerIds.size(); ++i) {
+        out << stepResult.capturedAttackerIds[i];
+        if (i + 1 < stepResult.capturedAttackerIds.size()) {
+            out << ",";
+        }
+    }
+    out << "],\n";
+
+    out << "  \"base_arrival_attacker_ids\": [";
+    for (std::size_t i = 0; i < stepResult.baseArrivalAttackerIds.size(); ++i) {
+        out << stepResult.baseArrivalAttackerIds[i];
+        if (i + 1 < stepResult.baseArrivalAttackerIds.size()) {
+            out << ",";
+        }
+    }
+    out << "]\n";
+
     out << "}\n";
     return out.str();
 }

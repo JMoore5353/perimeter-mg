@@ -1,12 +1,13 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_ENVIRONMENT_INITIALIZATION_H
+#define PERIMETER_PERIMETER_ENVIRONMENT_INITIALIZATION_H
 
 #include <cstdint>
 #include <optional>
 #include <vector>
 
-#include "core/WorldState.h"
-#include "geometry/Hex.h"
-#include "geometry/HexGrid.h"
+#include "perimeter/core/WorldState.h"
+#include "perimeter/geometry/Hex.h"
+#include "perimeter/geometry/HexGrid.h"
 
 namespace perimeter::environment {
 
@@ -26,3 +27,5 @@ struct InitializedEnvironment {
 InitializedEnvironment createInitialWorld(const InitializationConfig& config);
 
 }  // namespace perimeter::environment
+
+#endif  // PERIMETER_PERIMETER_ENVIRONMENT_INITIALIZATION_H

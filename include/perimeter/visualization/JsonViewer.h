@@ -1,9 +1,8 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_VISUALIZATION_JSONVIEWER_H
+#define PERIMETER_PERIMETER_VISUALIZATION_JSONVIEWER_H
 
 #include <string>
-#include <vector>
-
-#include "visualization/ViewerBackend.h"
+#include "perimeter/visualization/ViewerBackend.h"
 
 namespace perimeter::visualization {
 
@@ -12,7 +11,9 @@ public:
     [[nodiscard]] std::string render(const core::WorldState& state,
                                      const geometry::Grid& grid,
                                      int step,
-                                     const std::vector<double>& rewards) const override;
+                                     const environment::StepResult& stepResult) const override;
 };
 
 }  // namespace perimeter::visualization
+
+#endif  // PERIMETER_PERIMETER_VISUALIZATION_JSONVIEWER_H

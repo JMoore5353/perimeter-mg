@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_GEOMETRY_HEX_H
+#define PERIMETER_PERIMETER_GEOMETRY_HEX_H
 
 #include <array>
 #include <cstddef>
@@ -42,3 +43,5 @@ struct hash<perimeter::geometry::Hex> {
     }
 };
 }  // namespace std
+
+#endif  // PERIMETER_PERIMETER_GEOMETRY_HEX_H

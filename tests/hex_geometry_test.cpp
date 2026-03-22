@@ -1,5 +1,5 @@
-#include "geometry/Hex.h"
-#include "geometry/HexGrid.h"
+#include "perimeter/geometry/Hex.h"
+#include "perimeter/geometry/HexGrid.h"
 
 #include <algorithm>
 #include <set>

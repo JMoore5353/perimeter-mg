@@ -1,14 +1,15 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H
+#define PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H
 
 #include <cstdint>
 #include <random>
 #include <vector>
 
-#include "core/WorldState.h"
-#include "environment/Action.h"
-#include "environment/Transition.h"
-#include "geometry/Grid.h"
-#include "geometry/HexGrid.h"
+#include "perimeter/core/WorldState.h"
+#include "perimeter/environment/Action.h"
+#include "perimeter/environment/Transition.h"
+#include "perimeter/geometry/Grid.h"
+#include "perimeter/geometry/HexGrid.h"
 
 namespace perimeter::environment {
 
@@ -28,3 +29,5 @@ private:
 };
 
 }  // namespace perimeter::environment
+
+#endif  // PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H

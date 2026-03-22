@@ -1,4 +1,4 @@
-#include "environment/Transition.h"
+#include "perimeter/environment/Transition.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,7 +9,7 @@
 
 #include <gtest/gtest.h>
 
-#include "geometry/HexGrid.h"
+#include "perimeter/geometry/HexGrid.h"
 
 namespace perimeter::environment {
 namespace {

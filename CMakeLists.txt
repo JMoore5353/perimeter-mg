@@ -20,7 +20,7 @@ add_library(perimeter_geometry
 
 target_include_directories(perimeter_geometry
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 enable_testing()

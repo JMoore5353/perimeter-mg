@@ -1,9 +1,10 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_GEOMETRY_HEXGRID_H
+#define PERIMETER_PERIMETER_GEOMETRY_HEXGRID_H
 
 #include <vector>
 
-#include "geometry/Grid.h"
-#include "geometry/Hex.h"
+#include "perimeter/geometry/Grid.h"
+#include "perimeter/geometry/Hex.h"
 
 namespace perimeter::geometry {
 
@@ -28,3 +29,5 @@ private:
 };
 
 }  // namespace perimeter::geometry
+
+#endif  // PERIMETER_PERIMETER_GEOMETRY_HEXGRID_H

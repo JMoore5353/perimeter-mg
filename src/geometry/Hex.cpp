@@ -1,4 +1,4 @@
-#include "geometry/Hex.h"
+#include "perimeter/geometry/Hex.h"
 
 #include <array>
 #include <cstdlib>

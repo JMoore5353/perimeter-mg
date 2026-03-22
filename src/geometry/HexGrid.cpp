@@ -1,4 +1,4 @@
-#include "geometry/HexGrid.h"
+#include "perimeter/geometry/HexGrid.h"
 
 #include <algorithm>
 #include <set>

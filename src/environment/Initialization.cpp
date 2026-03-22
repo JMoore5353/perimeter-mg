@@ -1,4 +1,4 @@
-#include "environment/Initialization.h"
+#include "perimeter/environment/Initialization.h"
 
 #include <random>
 #include <stdexcept>
@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "core/AgentType.h"
+#include "perimeter/core/AgentType.h"
 
 namespace perimeter::environment {
 

@@ -1,12 +1,13 @@
-#pragma once
+#ifndef PERIMETER_PERIMETER_ENVIRONMENT_MOVEMENT_H
+#define PERIMETER_PERIMETER_ENVIRONMENT_MOVEMENT_H
 
 #include <random>
 #include <vector>
 
-#include "core/WorldState.h"
-#include "environment/Action.h"
-#include "geometry/Hex.h"
-#include "geometry/Grid.h"
+#include "perimeter/core/WorldState.h"
+#include "perimeter/environment/Action.h"
+#include "perimeter/geometry/Hex.h"
+#include "perimeter/geometry/Grid.h"
 
 namespace perimeter::environment {
 
@@ -35,3 +36,5 @@ void applySimultaneousMoves(core::WorldState& world,
                             std::mt19937& rng);
 
 }  // namespace perimeter::environment
+
+#endif  // PERIMETER_PERIMETER_ENVIRONMENT_MOVEMENT_H
