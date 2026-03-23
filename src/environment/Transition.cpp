@@ -55,7 +55,7 @@ void applyDefenderMovementPenalty(const core::WorldState& world,
     for (std::size_t index = 0; index < world.agents.size(); ++index) {
         const core::AgentState& agent = world.agents[index];
         if (agent.type == core::AgentType::DEFENDER && jointActions[index] != Action::STAY) {
-            rewardById[agent.id] -= 0.1;
+            rewardById[agent.id] += DEFENDER_MOVEMENT_REWARD;
         }
     }
 }
@@ -107,7 +107,7 @@ std::vector<CaptureRecord> resolveCaptures(const core::WorldState& world,
 
 void applyAttackerCapturePenalty(const IdSet& capturedIds, RewardById& rewardById) {
     for (const int attackerId : capturedIds) {
-        rewardById[attackerId] -= 100.0;
+        rewardById[attackerId] += ATTACKER_CAPTURE_REWARD;
     }
 }
 
@@ -116,8 +116,7 @@ void applyDefenderCaptureRewards(const std::vector<CaptureRecord>& records, Rewa
         const double rewardShare = static_cast<double>(record.capturedAttackerCount) /
                                    static_cast<double>(record.defenderIds.size());
         for (const int defenderId : record.defenderIds) {
-            // TODO: If needed, multiply by a constant here.
-            rewardById[defenderId] += rewardShare;
+            rewardById[defenderId] += DEFENDER_CAPTURE_PER_ATTACKER_BONUS * rewardShare;
         }
     }
 }
@@ -138,9 +137,9 @@ void applyBaseInteractions(const core::WorldState& world,
 
         if (agent.type == core::AgentType::ATTACKER) {
             baseArrivalIds.insert(agent.id);
-            rewardById[agent.id] += 100.0;
+            rewardById[agent.id] += ATTACKER_BASE_ARRIVAL_REWARD;
         } else if (agent.type == core::AgentType::DEFENDER) {
-            rewardById[agent.id] -= 10.0;
+            rewardById[agent.id] += DEFENDER_BASE_ARRIVAL_REWARD;
         }
     }
 }
@@ -153,7 +152,7 @@ void applyDefenderBaseBreachPenalty(const core::WorldState& world,
     }
     for (const core::AgentState& agent : world.agents) {
         if (agent.type == core::AgentType::DEFENDER) {
-            rewardById[agent.id] -= 100.0;
+            rewardById[agent.id] += DEFENDER_BASE_BREACH_REWARD;
         }
     }
 }

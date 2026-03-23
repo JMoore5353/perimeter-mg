@@ -59,7 +59,7 @@ TEST(TransitionTest, AttackerOnBaseGetsRewardAndIsRespawnedToOuterRing) {
     const StepResult result = stepWorld(world, actions, grid, rng);
 
     ASSERT_EQ(result.rewards.size(), 1U);
-    EXPECT_DOUBLE_EQ(result.rewards[0], 100.0);
+    EXPECT_DOUBLE_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
     EXPECT_EQ(result.baseArrivalAttackerIds.size(), 1U);
     EXPECT_EQ(result.baseArrivalAttackerIds[0], 100);
     EXPECT_EQ(result.respawnedAttackerIds.size(), 1U);
@@ -83,7 +83,7 @@ TEST(TransitionTest, DefenderOnBaseGetsPenalty) {
     const StepResult result = stepWorld(world, actions, grid, rng);
 
     ASSERT_EQ(result.rewards.size(), 1U);
-    EXPECT_DOUBLE_EQ(result.rewards[0], -10.0);
+    EXPECT_DOUBLE_EQ(result.rewards[0], DEFENDER_BASE_ARRIVAL_REWARD);
     EXPECT_TRUE(result.baseArrivalAttackerIds.empty());
     EXPECT_TRUE(result.capturedAttackerIds.empty());
 }
@@ -132,9 +132,9 @@ TEST(TransitionTest, BaseBreachPenalizesAllDefenders) {
     const StepResult result = stepWorld(world, actions, grid, rng);
 
     ASSERT_EQ(result.rewards.size(), 3U);
-    EXPECT_DOUBLE_EQ(result.rewards[0], 100.0);
-    EXPECT_DOUBLE_EQ(result.rewards[1], -100.0);
-    EXPECT_DOUBLE_EQ(result.rewards[2], -110.0);
+    EXPECT_DOUBLE_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
+    EXPECT_DOUBLE_EQ(result.rewards[1], DEFENDER_BASE_BREACH_REWARD);
+    EXPECT_DOUBLE_EQ(result.rewards[2], DEFENDER_BASE_BREACH_REWARD + DEFENDER_BASE_ARRIVAL_REWARD);
 }
 
 TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender) {
@@ -155,7 +155,7 @@ TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender) {
 
     const StepResult result = stepWorld(world, actions, grid, rng);
     const double captured = static_cast<double>(result.capturedAttackerIds.size());
-    const double expectedPerDefender = (captured / 2.0);
+    const double expectedPerDefender = (DEFENDER_CAPTURE_PER_ATTACKER_BONUS * captured / 2.0);
 
     ASSERT_EQ(result.rewards.size(), 4U);
     EXPECT_DOUBLE_EQ(result.rewards[2], expectedPerDefender);
@@ -178,7 +178,7 @@ TEST(TransitionTest, DefenderMovementPenaltyAppliesOnlyWhenNotStaying) {
 
     ASSERT_EQ(result.rewards.size(), 2U);
     EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
-    EXPECT_DOUBLE_EQ(result.rewards[1], -0.1);
+    EXPECT_DOUBLE_EQ(result.rewards[1], DEFENDER_MOVEMENT_REWARD);
 }
 
 TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesSingleDefenderCase) {

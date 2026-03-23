@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
 
 
 def hex_to_xy(q: int, r: int, size: float) -> Tuple[float, float]:
@@ -87,8 +88,8 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     ax.set_facecolor("#f8f9fa")
     ax.grid(False)
 
-    ax.scatter(world_x, world_y, marker="h", s=550, facecolors="#e9ecef", edgecolors="#adb5bd", linewidths=0.8)
-    ax.scatter(base_x, base_y, marker="h", s=550, facecolors="#74c69d", edgecolors="#2d6a4f", linewidths=1.2)
+    ax.scatter(world_x, world_y, marker="H", s=1500, facecolors="#e9ecef", edgecolors="#adb5bd", linewidths=0.8)
+    ax.scatter(base_x, base_y, marker="H", s=1500, facecolors="#74c69d", edgecolors="#2d6a4f", linewidths=1.2)
 
     attacker_scatter = ax.scatter([], [], s=120, c="#d62828", marker="o", label="Attackers", zorder=3)
     defender_scatter = ax.scatter([], [], s=120, c="#1d4ed8", marker="s", label="Defenders", zorder=3)
@@ -178,18 +179,24 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
                         y + 0.07 * hex_size,
                         str(agent_id),
                         fontsize=9,
-                        color=color,
+                        color='k',
                         weight="bold",
                         ha="left",
                         va="bottom",
                         zorder=4,
+                        path_effects=[
+                            pe.Stroke(linewidth=2, foreground='white'),
+                            pe.Normal()
+                        ],
                     )
                 )
 
-        attacker_scatter.set_offsets(list(zip(attackers_x, attackers_y)) if attackers_x else [])
+        if attackers_x:
+            attacker_scatter.set_offsets(list(zip(attackers_x, attackers_y)))
         if attacker_colors:
             attacker_scatter.set_facecolors(attacker_colors)
-        defender_scatter.set_offsets(list(zip(defenders_x, defenders_y)) if defenders_x else [])
+        if defenders_x:
+            defender_scatter.set_offsets(list(zip(defenders_x, defenders_y)))
         if defender_colors:
             defender_scatter.set_facecolors(defender_colors)
 

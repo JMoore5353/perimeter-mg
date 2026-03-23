@@ -33,7 +33,7 @@ void runSim(const int endT, const std::string filename) {
 
   const environment::InitializationConfig config{
       .radius{3},
-      .attackerCount{3},
+      .attackerCount{5},
       .defenderCount{5},
       .seed{123U}
   };

@@ -9,6 +9,13 @@
 #include "perimeter/environment/Action.h"
 #include "perimeter/geometry/Grid.h"
 
+#define ATTACKER_BASE_ARRIVAL_REWARD 100
+#define ATTACKER_CAPTURE_REWARD -100
+#define DEFENDER_BASE_ARRIVAL_REWARD -10
+#define DEFENDER_MOVEMENT_REWARD -0.1
+#define DEFENDER_BASE_BREACH_REWARD -100
+#define DEFENDER_CAPTURE_PER_ATTACKER_BONUS 1
+
 namespace perimeter::environment {
 
 struct StepResult {
