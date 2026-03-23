@@ -23,6 +23,10 @@ target_include_directories(perimeter_geometry
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+add_executable(${PROJECT_NAME}
+    src/main.cpp)
+target_link_libraries(${PROJECT_NAME} perimeter_geometry)
+
 enable_testing()
 
 find_package(GTest QUIET)
