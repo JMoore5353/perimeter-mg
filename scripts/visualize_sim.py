@@ -10,6 +10,11 @@ from typing import Dict, List, Sequence, Tuple
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 
+# TODO: Make it so when an attacker arrives at a base tile that the base tile turns red for the next view step.
+# Otherwise, it is hard to tell when an attacker hits the base tile (since it just teleports before actually being visualized at the base)
+
+# TODO: (Later step, not right now) Figure out how to visualize the learning process. How can you show how the policies of the agents change?
+
 
 def hex_to_xy(q: int, r: int, size: float) -> Tuple[float, float]:
     x = size * (1.5 * q)
@@ -88,11 +93,31 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     ax.set_facecolor("#f8f9fa")
     ax.grid(False)
 
-    ax.scatter(world_x, world_y, marker="H", s=1500, facecolors="#e9ecef", edgecolors="#adb5bd", linewidths=0.8)
-    ax.scatter(base_x, base_y, marker="H", s=1500, facecolors="#74c69d", edgecolors="#2d6a4f", linewidths=1.2)
+    ax.scatter(
+        world_x,
+        world_y,
+        marker="H",
+        s=1500,
+        facecolors="#e9ecef",
+        edgecolors="#adb5bd",
+        linewidths=0.8,
+    )
+    ax.scatter(
+        base_x,
+        base_y,
+        marker="H",
+        s=1500,
+        facecolors="#74c69d",
+        edgecolors="#2d6a4f",
+        linewidths=1.2,
+    )
 
-    attacker_scatter = ax.scatter([], [], s=120, c="#d62828", marker="o", label="Attackers", zorder=3)
-    defender_scatter = ax.scatter([], [], s=120, c="#1d4ed8", marker="s", label="Defenders", zorder=3)
+    attacker_scatter = ax.scatter(
+        [], [], s=120, c="#d62828", marker="o", label="Attackers", zorder=3
+    )
+    defender_scatter = ax.scatter(
+        [], [], s=120, c="#1d4ed8", marker="s", label="Defenders", zorder=3
+    )
     event_text = ax.text(
         0.01,
         0.99,
@@ -101,7 +126,9 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
         va="top",
         ha="left",
         fontsize=10,
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", alpha=0.85, edgecolor="#ced4da"),
+        bbox=dict(
+            boxstyle="round,pad=0.4", facecolor="white", alpha=0.85, edgecolor="#ced4da"
+        ),
     )
 
     ax.legend(loc="lower right")
@@ -116,8 +143,12 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     ax.set_xlim(min(all_x) - margin, max(all_x) + margin)
     ax.set_ylim(min(all_y) - margin, max(all_y) + margin)
 
-    all_agent_ids = sorted({int(agent["id"]) for record in steps for agent in record.get("agents", [])})
+    all_agent_ids = sorted(
+        {int(agent["id"]) for record in steps for agent in record.get("agents", [])}
+    )
     cumulative_rewards = {agent_id: 0.0 for agent_id in all_agent_ids}
+    cumulative_captures = 0
+    cumulative_base_arrivals = 0
     reward_history = {agent_id: [] for agent_id in all_agent_ids}
     step_history: List[int] = []
     cmap = plt.get_cmap("tab10")
@@ -125,7 +156,9 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     reward_lines = {}
     id_labels = []
     for i, agent_id in enumerate(all_agent_ids):
-        (line,) = reward_ax.plot([], [], label=f"id {agent_id}", color=agent_colors[agent_id], linewidth=2.0)
+        (line,) = reward_ax.plot(
+            [], [], label=f"id {agent_id}", color=agent_colors[agent_id], linewidth=2.0
+        )
         reward_lines[agent_id] = line
     if all_agent_ids:
         reward_ax.legend(loc="upper left", ncol=2, fontsize=9)
@@ -179,14 +212,14 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
                         y + 0.07 * hex_size,
                         str(agent_id),
                         fontsize=9,
-                        color='k',
+                        color="k",
                         weight="bold",
                         ha="left",
                         va="bottom",
                         zorder=4,
                         path_effects=[
-                            pe.Stroke(linewidth=2, foreground='white'),
-                            pe.Normal()
+                            pe.Stroke(linewidth=2, foreground="white"),
+                            pe.Normal(),
                         ],
                     )
                 )
@@ -201,10 +234,12 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
             defender_scatter.set_facecolors(defender_colors)
 
         captured = record.get("captured_attacker_ids", [])
+        cumulative_captures += len(captured)
         arrivals = record.get("base_arrival_attacker_ids", [])
+        cumulative_base_arrivals += len(arrivals)
         event_lines = [
-            f"Captured attackers: {captured if captured else 'None'}",
-            f"Base arrivals: {arrivals if arrivals else 'None'}",
+            f"Captured attackers: {cumulative_captures}",
+            f"Base arrivals: {cumulative_base_arrivals}",
         ]
         event_text.set_text("\n".join(event_lines))
 
@@ -225,7 +260,9 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
             pad = max(1.0, (y_max - y_min) * 0.15)
             reward_ax.set_ylim(y_min - pad, y_max + pad)
 
-        ax.set_title(f"Hex World Simulation - Step {step}", fontsize=14, fontweight="bold")
+        ax.set_title(
+            f"Hex World Simulation - Step {step}", fontsize=14, fontweight="bold"
+        )
         fig.canvas.draw_idle()
         plt.pause(delay)
 
@@ -234,10 +271,23 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Visualize hex-world simulation JSON logs.")
-    parser.add_argument("--input", default="sim.json", help="Path to sim json log file (default: sim.json)")
-    parser.add_argument("--delay", type=float, default=0.35, help="Delay in seconds between timesteps (default: 0.35)")
-    parser.add_argument("--hex-size", type=float, default=1.0, help="Hex size scaling (default: 1.0)")
+    parser = argparse.ArgumentParser(
+        description="Visualize hex-world simulation JSON logs."
+    )
+    parser.add_argument(
+        "--input",
+        default="sim.json",
+        help="Path to sim json log file (default: sim.json)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.35,
+        help="Delay in seconds between timesteps (default: 0.35)",
+    )
+    parser.add_argument(
+        "--hex-size", type=float, default=1.0, help="Hex size scaling (default: 1.0)"
+    )
     args = parser.parse_args()
 
     steps = load_steps(Path(args.input))

@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <vector>
 
 #include "perimeter/core/WorldState.h"
@@ -8,24 +9,19 @@
 #include "perimeter/environment/Initialization.h"
 #include "perimeter/environment/Simulator.h"
 #include "perimeter/geometry/HexGrid.h"
-// #include "perimeter/learning/nash_q_learning.h"
+#include "perimeter/learning/joint.h"
+#include "perimeter/learning/nash_q_learning.h"
 #include "perimeter/visualization/JsonViewer.h"
 
 namespace perimeter
 {
 
-std::vector<environment::Action> get_random_actions(std::mt19937& rng, const std::size_t numActions)
+JointPolicy getRandomJointPolicy(std::mt19937& rng, const std::size_t numAgents)
 {
-  std::uniform_int_distribution<int> distr{0, 6};
-
-  std::vector<environment::Action> actions;
-  actions.reserve(numActions);
-  for (std::size_t i{0}; i < numActions; ++i)
-  {
-    actions.emplace_back(static_cast<environment::Action>(distr(rng)));
-  }
-
-  return actions;
+  return JointPolicy(
+    numAgents,
+    std::vector<double>(static_cast<int>(environment::Action::NUM_ACTIONS),
+                        1 / static_cast<double>(environment::Action::NUM_ACTIONS)));
 }
 
 void runSim(const int endT, const std::string filename)
@@ -35,40 +31,78 @@ void runSim(const int endT, const std::string filename)
   outFile.open(filename);
 
   const environment::InitializationConfig config{.radius{3},
-                                                 .attackerCount{3},
-                                                 .defenderCount{6},
+                                                 .attackerCount{2},
+                                                 .defenderCount{4},
                                                  .seed{123U}};
   environment::InitializedEnvironment initialized = createInitialWorld(config);
   environment::Simulator simulator{std::move(initialized.grid), std::move(initialized.world),
                                    config.seed};
+  std::cout << "Initialized environment with " << config.attackerCount << " attackers and "
+            << config.defenderCount << " defenders." << std::endl;
 
   visualization::JsonViewer jsonViewer;
   std::mt19937 rng(config.seed);
 
-  // NashQLearning policy;
+  std::cout << "Computing joint action space...";
+  int numAgents = simulator.world().agents.size();
+  double gamma = 0.9;
+  JointActionSpace jointActionSpace{numAgents};
+  std::cout << " Done!" << std::endl;
+  std::vector<NashQLearning> qLearners;
+  for (int i{0}; i < numAgents; ++i) {
+    qLearners.emplace_back(i, numAgents, gamma, jointActionSpace);
+  }
 
-  while (t < endT)
-  {
-    // TODO: I need to now add the learning module. I assume it will be centralized learning
-    // (one module that has access to all the agents). You'll need to train and then validate the
-    // learned policies on simple environments.
-    // QUESTIONS;
-    // 1. Does the shape of the environment affect the learned policies?
-    // 2. Does the number of agents affect the learned policies?
+  std::vector<core::AgentState> currAgentStates = simulator.world().agents;
+  std::vector<core::AgentState> prevAgentStates = currAgentStates;
+  JointAction prevJointAction(numAgents, environment::Action::STAY);
+  std::vector<double> stepRewards(numAgents, 0.0);
+  while (t < endT) {
+    std::ostringstream outPrefix;
+    outPrefix << "\rStarting simulation step " << t << "...";
+    std::cout << outPrefix.str() << std::flush;
 
-    std::vector<environment::Action> jointActions =
-      get_random_actions(rng, simulator.world().agents.size());
-    // policy.computeJointPolicy(simulator.world().agents);
-    // policy.updateJointQTable(simulator.world().agents);
-    // std::vector<environment::Action> jointActions = policy.sampleJointPolicy(rng);
-    environment::StepResult step = simulator.step(jointActions);
-    if (outFile.is_open())
-    {
-      outFile << jsonViewer.render(simulator.world(), simulator.grid(), t, step);
+    // Compute stochastic policy (centralized module that computes Nash Equilibrium for simple game)
+    std::cout << outPrefix.str() << " Computing stochastic policy..." << std::flush;
+    // JointPolicy jointPolicy = computeNashEquilibriumPolicy();
+    // JointPolicy jointPolicy = computeCorrelatedEquilibriumPolicy();
+    // JointPolicy jointPolicy = computeFictitiousPlayPolicy();
+    JointPolicy jointPolicy = getRandomJointPolicy(rng, numAgents);
+
+    // Update Q tables
+    std::cout << outPrefix.str() << " Updating Q tables..." << std::string(58, ' ') << std::flush;
+    JointAction jointAction;
+    for (auto& agent : qLearners) {
+      agent.updateJointQTable(prevAgentStates, prevJointAction, stepRewards, currAgentStates,
+                              jointPolicy);
+      jointAction.push_back(agent.sampleEpsGreedyPolicy(rng, currAgentStates));
     }
 
+    // Update N counts
+    std::cout << outPrefix.str() << " Updating state and joint action visit counts (N tables)..."
+              << std::flush;
+    for (auto& agent : qLearners) {
+      agent.updateN(currAgentStates, jointAction);
+    }
+
+    // Step action
+    std::cout << outPrefix.str() << " Stepping simulator..." << std::string(58, ' ') << std::flush;
+    environment::StepResult step = simulator.step(jointAction);
+
+    // Update prev info
+    prevAgentStates = currAgentStates;
+    prevJointAction = jointAction;
+    currAgentStates = simulator.world().agents;
+    stepRewards = step.rewards;
+
+    std::cout << outPrefix.str() << " Writing to file..." << std::string(58, ' ') << std::flush;
+    if (outFile.is_open()) {
+      outFile << jsonViewer.render(simulator.world(), simulator.grid(), t, step);
+    }
     ++t;
+    std::cout << outPrefix.str() << " Done!" << std::string(58, ' ') << std::flush;
   }
+  std::cout << std::endl;
 
   outFile.close();
 }

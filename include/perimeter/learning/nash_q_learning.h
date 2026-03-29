@@ -18,11 +18,11 @@ namespace perimeter
 class NashQLearning
 {
 public:
-  NashQLearning(int id, int numAgents, double gamma);
+  NashQLearning(int id, int numAgents, double gamma, const JointActionSpace& jointActionSpace);
 
   void computePolicy(const std::vector<core::AgentState>& agentStates);
   void updateJointQTable(const std::vector<core::AgentState>& prevAgentStates,
-                         const JointAction& prevJointAction, const double stepReward,
+                         const JointAction& prevJointAction, const std::vector<double>& stepRewards,
                          const std::vector<core::AgentState>& currAgentStates,
                          const JointPolicy& jointPolicy);
   const environment::Action sampleEpsGreedyPolicy(std::mt19937& rg,
@@ -36,7 +36,7 @@ private:
   double gamma_;
   SingleAgentSimpleGamePolicy randomPolicy_;
   SingleAgentSimpleGamePolicy policy_;
-  JointActionSpace jointActionSpace_;
+  const JointActionSpace& jointActionSpace_;
 
   std::unordered_map<core::AgentState, int> N_s_;
   std::unordered_map<core::AgentState, std::unordered_map<JointAction, int, ActionVectorHash>>
