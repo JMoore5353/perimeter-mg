@@ -11,7 +11,7 @@ JointActionSpace::JointActionSpace(const int numAgents)
 void JointActionSpace::enumerateJointActionSpace(const int numAgents)
 {
   std::vector<environment::Action> possibleActions;
-  for (int i = 0; i < sizeof(environment::Action); ++i) {
+  for (int i = 0; i < static_cast<int>(environment::Action::NUM_ACTIONS); ++i) {
     possibleActions.push_back(static_cast<environment::Action>(i));
   }
 
@@ -26,12 +26,8 @@ void JointActionSpace::addNewAgentToJointAction(
   const std::vector<environment::Action>& jointAction,
   const std::vector<environment::Action>& possibleActions, const int remainingAgentsToAdd)
 {
-  if (remainingAgentsToAdd == 1) {
-    for (auto a_prime : possibleActions) {
-      std::vector<environment::Action> newJointAction(jointAction);
-      newJointAction.push_back(a_prime);
-      allJointActions_.push_back(newJointAction);
-    }
+  if (remainingAgentsToAdd <= 0) {
+    allJointActions_.push_back(jointAction);
     return;
   }
 

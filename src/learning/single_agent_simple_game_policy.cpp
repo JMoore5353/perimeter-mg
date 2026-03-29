@@ -14,7 +14,7 @@ SingleAgentSimpleGamePolicy::SingleAgentSimpleGamePolicy(const std::vector<doubl
 
 SingleAgentSimpleGamePolicy::SingleAgentSimpleGamePolicy(environment::Action deterministicAction)
 {
-  weights_ = std::vector<double>(sizeof(environment::Action), 0.0);
+  weights_ = std::vector<double>(static_cast<int>(environment::Action::NUM_ACTIONS), 0.0);
   weights_[static_cast<int>(deterministicAction)] = 1.0;
   dist_ = std::discrete_distribution<>(weights_.begin(), weights_.end());
 }

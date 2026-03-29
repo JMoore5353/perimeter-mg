@@ -25,7 +25,7 @@ TEST(SimpleGamePolicy, TestRandomActionsHaveCorrectFrequency)
   SingleAgentSimpleGamePolicy policy(weights);
   std::mt19937 rg(3);
 
-  std::vector<int> countFreq(sizeof(environment::Action), 0);
+  std::vector<int> countFreq(static_cast<int>(environment::Action::NUM_ACTIONS), 0);
   int totalRuns{5000};
   for (int i{0}; i < totalRuns; ++i) {
     int idx = static_cast<int>(policy.sampleAction(rg));
@@ -44,7 +44,7 @@ TEST(SimpleGamePolicy, WeightsAreNormalizedCorrectly)
   SingleAgentSimpleGamePolicy policy{weights};
   std::vector<double> normalizedWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
 
-  for (int i = 0; i < sizeof(environment::Action); ++i) {
+  for (int i = 0; i < static_cast<int>(environment::Action::NUM_ACTIONS); ++i) {
     environment::Action action = static_cast<environment::Action>(i);
     double prob = policy.getProbability(action);
 
@@ -57,7 +57,7 @@ TEST(SimpleGamePolicy, TestGetProbabilityReturnsCorrectProbability)
   std::vector<double> weights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
   SingleAgentSimpleGamePolicy policy{weights};
 
-  for (int i = 0; i < sizeof(environment::Action); ++i) {
+  for (int i = 0; i < static_cast<int>(environment::Action::NUM_ACTIONS); ++i) {
     environment::Action action = static_cast<environment::Action>(i);
     double prob = policy.getProbability(action);
 

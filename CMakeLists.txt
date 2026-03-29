@@ -58,6 +58,7 @@ add_executable(geometry_tests
     tests/visualization_test.cpp
     tests/single_agent_simple_game_policy_test.cpp
     tests/nash_q_learning_test.cpp
+    tests/joint_test.cpp
 )
 
 target_link_libraries(geometry_tests

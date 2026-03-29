@@ -7,8 +7,8 @@ NashQLearning::NashQLearning(int id, int numAgents, double gamma)
     : id_{id}
     , numAgents_{numAgents}
     , gamma_{gamma}
-    , randomPolicy_{std::vector<double>(sizeof(environment::Action),
-                                        1 / static_cast<double>(sizeof(environment::Action)))}
+    , randomPolicy_{std::vector<double>(static_cast<int>(environment::Action::NUM_ACTIONS),
+                                        1 / static_cast<double>(environment::Action::NUM_ACTIONS))}
     , policy_{randomPolicy_}
     , jointActionSpace_{numAgents}
 {}
