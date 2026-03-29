@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(perimeter_mg LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -16,8 +16,10 @@ add_library(perimeter_geometry
     src/environment/Initialization.cpp
     src/visualization/AsciiViewer.cpp
     src/visualization/JsonViewer.cpp
+    src/learning/nash_q_learning.cpp
+    src/learning/single_agent_simple_game_policy.cpp
+    src/learning/joint.cpp
 )
-
 target_include_directories(perimeter_geometry
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -54,6 +56,8 @@ add_executable(geometry_tests
     tests/simulator_test.cpp
     tests/agent_interface_test.cpp
     tests/visualization_test.cpp
+    tests/single_agent_simple_game_policy_test.cpp
+    tests/nash_q_learning_test.cpp
 )
 
 target_link_libraries(geometry_tests
