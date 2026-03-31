@@ -32,7 +32,7 @@ void runSim(const int endT, const std::string filename)
 
   const environment::InitializationConfig config{.radius{3},
                                                  .attackerCount{2},
-                                                 .defenderCount{4},
+                                                 .defenderCount{3},
                                                  .seed{123U}};
   environment::InitializedEnvironment initialized = createInitialWorld(config);
   environment::Simulator simulator{std::move(initialized.grid), std::move(initialized.world),
@@ -67,12 +67,14 @@ void runSim(const int endT, const std::string filename)
     // JointPolicy jointPolicy = computeNashEquilibriumPolicy();
     // JointPolicy jointPolicy = computeCorrelatedEquilibriumPolicy();
     // JointPolicy jointPolicy = computeFictitiousPlayPolicy();
+    // JointPolicy jointPolicy = computeRegretMatchingPolicy();
     JointPolicy jointPolicy = getRandomJointPolicy(rng, numAgents);
 
     // Update Q tables
     std::cout << outPrefix.str() << " Updating Q tables..." << std::string(58, ' ') << std::flush;
     JointAction jointAction;
     for (auto& agent : qLearners) {
+      agent.setEquilibriumPolicy(jointPolicy);
       agent.updateJointQTable(prevAgentStates, prevJointAction, stepRewards, currAgentStates,
                               jointPolicy);
       jointAction.push_back(agent.sampleEpsGreedyPolicy(rng, currAgentStates));

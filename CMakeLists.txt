@@ -6,6 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# LP library
+include(FetchContent)
+message(STATUS "Fetching HiGHS repository...")
+FetchContent_Declare(
+    highs
+    GIT_REPOSITORY https://github.com/ERGO-Code/HiGHS.git
+    GIT_TAG v1.13.1
+)
+FetchContent_MakeAvailable(highs)
+
 add_library(perimeter_geometry
     src/geometry/Hex.cpp
     src/geometry/HexGrid.cpp
@@ -19,6 +29,10 @@ add_library(perimeter_geometry
     src/learning/nash_q_learning.cpp
     src/learning/single_agent_simple_game_policy.cpp
     src/learning/joint.cpp
+)
+target_link_libraries(perimeter_geometry
+    PUBLIC
+        highs
 )
 target_include_directories(perimeter_geometry
     PUBLIC

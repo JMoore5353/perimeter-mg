@@ -34,6 +34,7 @@ struct ActionVectorHash
 };
 
 using JointPolicy = std::vector<SingleAgentSimpleGamePolicy>;
+using JointReward = std::vector<double>;
 
 class JointActionSpace
 {

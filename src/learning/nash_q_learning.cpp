@@ -1,4 +1,5 @@
 #include "perimeter/learning/nash_q_learning.h"
+#include <stdexcept>
 
 namespace perimeter
 {
@@ -14,12 +15,17 @@ NashQLearning::NashQLearning(int id, int numAgents, double gamma,
     , jointActionSpace_{jointActionSpace}
 {}
 
-void NashQLearning::computePolicy(const std::vector<core::AgentState>& agentStates)
+void NashQLearning::setEquilibriumPolicy(const JointPolicy& newPolicy)
 {
+  // TODO: NEXT STEPS: Add unit tests to this qlearning module. (Ask AI? I'm not sure really the best way to test this)
   // TODO: Create this module. It should live outside the agent so it only gets solved once.
   // Form simple game
   // Solve Nash Eq
-  policy_ = randomPolicy_;
+  // Use HiGHS and ask AI to do it for you. You will want to solve the correlated equilibrium LP
+  // with utilitarian rewards. Is there a way you can code the independence between teams into the joint action function?
+  // To do that, you may have to add a constraint that results in the definition of independence --> but that's a nonlinear constraint.
+  // If HiGHS proves to be too slow, then you should implement regret matching, which should solve very fast.
+  policy_ = newPolicy.at(id_);
 }
 
 void NashQLearning::updateJointQTable(const std::vector<core::AgentState>& prevAgentStates,

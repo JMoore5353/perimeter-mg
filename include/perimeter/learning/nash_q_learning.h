@@ -20,7 +20,7 @@ class NashQLearning
 public:
   NashQLearning(int id, int numAgents, double gamma, const JointActionSpace& jointActionSpace);
 
-  void computePolicy(const std::vector<core::AgentState>& agentStates);
+  void setEquilibriumPolicy(const JointPolicy& newPolicy);
   void updateJointQTable(const std::vector<core::AgentState>& prevAgentStates,
                          const JointAction& prevJointAction, const std::vector<double>& stepRewards,
                          const std::vector<core::AgentState>& currAgentStates,
