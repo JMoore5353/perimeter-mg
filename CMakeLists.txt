@@ -16,6 +16,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(highs)
 
+# Ipopt for Nash equilibrium solver
+find_library(IPOPT_LIBRARY NAMES ipopt REQUIRED)
+find_path(IPOPT_INCLUDE_DIR NAMES coin/IpTNLP.hpp REQUIRED)
+message(STATUS "Found Ipopt library: ${IPOPT_LIBRARY}")
+message(STATUS "Found Ipopt include: ${IPOPT_INCLUDE_DIR}")
+
 add_library(perimeter_geometry
     src/geometry/Hex.cpp
     src/geometry/HexGrid.cpp
@@ -29,14 +35,21 @@ add_library(perimeter_geometry
     src/learning/nash_q_learning.cpp
     src/learning/single_agent_simple_game_policy.cpp
     src/learning/joint.cpp
+    src/learning/nash_equilibrium_solver.cpp
 )
 target_link_libraries(perimeter_geometry
     PUBLIC
         highs
+        ${IPOPT_LIBRARY}
 )
 target_include_directories(perimeter_geometry
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${IPOPT_INCLUDE_DIR}
+)
+target_compile_definitions(perimeter_geometry
+    PRIVATE
+        HAVE_CSTDDEF
 )
 
 add_executable(${PROJECT_NAME}
@@ -73,6 +86,7 @@ add_executable(geometry_tests
     tests/single_agent_simple_game_policy_test.cpp
     tests/joint_test.cpp
     tests/nash_q_learning_test.cpp
+    tests/nash_equilibrium_solver_test.cpp
 )
 
 target_link_libraries(geometry_tests

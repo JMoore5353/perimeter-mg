@@ -1,5 +1,7 @@
+#include <chrono>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <random>
 #include <sstream>
 #include <vector>
@@ -10,6 +12,7 @@
 #include "perimeter/environment/Simulator.h"
 #include "perimeter/geometry/HexGrid.h"
 #include "perimeter/learning/joint.h"
+#include "perimeter/learning/nash_equilibrium_solver.h"
 #include "perimeter/learning/nash_q_learning.h"
 #include "perimeter/visualization/JsonViewer.h"
 
@@ -31,8 +34,8 @@ void runSim(const int endT, const std::string filename)
   outFile.open(filename);
 
   const environment::InitializationConfig config{.radius{3},
-                                                 .attackerCount{2},
-                                                 .defenderCount{3},
+                                                 .attackerCount{1},
+                                                 .defenderCount{1},
                                                  .seed{123U}};
   environment::InitializedEnvironment initialized = createInitialWorld(config);
   environment::Simulator simulator{std::move(initialized.grid), std::move(initialized.world),
@@ -53,6 +56,10 @@ void runSim(const int endT, const std::string filename)
     qLearners.emplace_back(i, numAgents, gamma, jointActionSpace);
   }
 
+  NashEquilibriumSolver nashSolver;
+  const auto rewardFunction = simulator.getRewardFunction();
+  std::vector<int> solveTimes;
+
   std::vector<core::AgentState> currAgentStates = simulator.world().agents;
   std::vector<core::AgentState> prevAgentStates = currAgentStates;
   JointAction prevJointAction(numAgents, environment::Action::STAY);
@@ -64,11 +71,16 @@ void runSim(const int endT, const std::string filename)
 
     // Compute stochastic policy (centralized module that computes Nash Equilibrium for simple game)
     std::cout << outPrefix.str() << " Computing stochastic policy..." << std::flush;
-    // JointPolicy jointPolicy = computeNashEquilibriumPolicy();
+    auto start = std::chrono::steady_clock::now();
+    JointPolicy jointPolicy =
+      nashSolver.solve(rewardFunction, jointActionSpace, simulator.world().agents);
     // JointPolicy jointPolicy = computeCorrelatedEquilibriumPolicy();
     // JointPolicy jointPolicy = computeFictitiousPlayPolicy();
     // JointPolicy jointPolicy = computeRegretMatchingPolicy();
-    JointPolicy jointPolicy = getRandomJointPolicy(rng, numAgents);
+    // JointPolicy jointPolicy = getRandomJointPolicy(rng, numAgents);
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    solveTimes.push_back(duration.count());
 
     // Update Q tables
     std::cout << outPrefix.str() << " Updating Q tables..." << std::string(58, ' ') << std::flush;
@@ -105,6 +117,12 @@ void runSim(const int endT, const std::string filename)
     std::cout << outPrefix.str() << " Done!" << std::string(58, ' ') << std::flush;
   }
   std::cout << std::endl;
+
+  // Timing analysis
+  std::cout << "Solve times: "
+            << std::accumulate(solveTimes.begin(), solveTimes.end(), 0.0)
+      / static_cast<double>(solveTimes.size())
+            << std::endl;
 
   outFile.close();
 }

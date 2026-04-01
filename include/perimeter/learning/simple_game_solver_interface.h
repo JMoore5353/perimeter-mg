@@ -1,7 +1,10 @@
 #ifndef SIMPLE_GAME_SOLVER_INTERFACE_H
 #define SIMPLE_GAME_SOLVER_INTERFACE_H
 
+#include "perimeter/core/AgentState.h"
 #include "perimeter/learning/joint.h"
+
+namespace perimeter {
 
 class SimpleGameSolverInterface
 {
@@ -15,7 +18,10 @@ public:
   */
   virtual JointPolicy solve(const std::function<JointReward(JointAction)>& R,
                             const JointActionSpace& jointActionSpace,
-                            const std::vector<AgentState>& agents) = 0;
+                            const std::vector<core::AgentState>& agents) = 0;
+  virtual ~SimpleGameSolverInterface() = default;
 };
+
+} // namespace perimeter
 
 #endif
