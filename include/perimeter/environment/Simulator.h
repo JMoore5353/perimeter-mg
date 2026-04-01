@@ -2,6 +2,7 @@
 #define PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H
 
 #include <cstdint>
+#include <functional>
 #include <random>
 #include <vector>
 
@@ -10,24 +11,30 @@
 #include "perimeter/environment/Transition.h"
 #include "perimeter/geometry/Grid.h"
 #include "perimeter/geometry/HexGrid.h"
+#include "perimeter/learning/joint.h"
 
-namespace perimeter::environment {
+namespace perimeter::environment
+{
 
-class Simulator {
+class Simulator
+{
 public:
-    Simulator(geometry::HexGrid grid, core::WorldState initialWorld, std::uint32_t seed);
+  Simulator(geometry::HexGrid grid, core::WorldState initialWorld, std::uint32_t seed);
 
-    StepResult step(const std::vector<Action>& jointActions);
+  StepResult step(const std::vector<Action>& jointActions);
 
-    [[nodiscard]] const core::WorldState& world() const noexcept;
-    [[nodiscard]] const geometry::Grid& grid() const noexcept;
+  [[nodiscard]] const core::WorldState& world() const noexcept;
+  [[nodiscard]] const geometry::Grid& grid() const noexcept;
+
+  [[nodiscard]] std::function<perimeter::JointReward(perimeter::JointAction)>
+  getRewardFunction() const;
 
 private:
-    geometry::HexGrid grid_;
-    core::WorldState world_;
-    std::mt19937 rng_;
+  geometry::HexGrid grid_;
+  core::WorldState world_;
+  std::mt19937 rng_;
 };
 
-}  // namespace perimeter::environment
+} // namespace perimeter::environment
 
-#endif  // PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H
+#endif // PERIMETER_PERIMETER_ENVIRONMENT_SIMULATOR_H

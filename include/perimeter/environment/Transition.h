@@ -8,6 +8,7 @@
 #include "perimeter/core/WorldState.h"
 #include "perimeter/environment/Action.h"
 #include "perimeter/geometry/Grid.h"
+#include "perimeter/learning/joint.h"
 
 #define ATTACKER_BASE_ARRIVAL_REWARD 100
 #define ATTACKER_CAPTURE_REWARD -100
@@ -32,6 +33,10 @@ StepResult stepWorld(core::WorldState& world,
                      const std::vector<Action>& jointActions,
                      const geometry::Grid& grid,
                      std::mt19937& rng);
+
+perimeter::JointReward computeDeterministicJointReward(const core::WorldState& world,
+                                                       const perimeter::JointAction& jointActions,
+                                                       const geometry::Grid& grid);
 
 }  // namespace perimeter::environment
 

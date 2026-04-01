@@ -6,7 +6,16 @@
 class SimpleGameSolverInterface
 {
 public:
-  virtual JointPolicy solve() = 0;
+  /*
+  *  Solves a simple game, in the sense that it provides a (somewhat) optimal solution
+  *  @param R is the joint reward function that takes in a JointAction and returns rewards for each agent
+  *  @param jointActionSpace enumerates all possible JointActions. Use this object to iterate over JointActions.
+  *  @param agents is a vector of AgentStates that contains the type of each agent (attacker vs defender)
+  *  @return JointPolicy, one SingleAgentSimpleGamePolicy per agent.
+  */
+  virtual JointPolicy solve(const std::function<JointReward(JointAction)>& R,
+                            const JointActionSpace& jointActionSpace,
+                            const std::vector<AgentState>& agents) = 0;
 };
 
 #endif
