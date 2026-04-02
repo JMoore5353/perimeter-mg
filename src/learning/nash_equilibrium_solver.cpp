@@ -18,9 +18,10 @@ namespace
 class NashNLP : public Ipopt::TNLP
 {
 public:
-  NashNLP(const std::function<JointReward(JointAction)>& R,
+  NashNLP(const JointState& state, const JointRewardFunction& R,
           const JointActionSpace& jointActionSpace, int numAgents, int numActions)
-      : R_(R)
+      : jointState_(state)
+      , R_(R)
       , jointActionSpace_(jointActionSpace)
       , numAgents_(numAgents)
       , numActions_(numActions)
@@ -238,8 +239,8 @@ private:
       }
 
       // Get reward for this joint action
-      JointReward rewards = R_(jointAction);
-      utility += rewards[agentIdx] * jointProb;
+      double reward = R_[agentIdx](jointState_, jointAction);
+      utility += reward * jointProb;
     }
 
     return utility;
@@ -268,8 +269,8 @@ private:
       }
 
       // Get reward
-      JointReward rewards = R_(jointAction);
-      utility += rewards[agentIdx] * jointProb;
+      double reward = R_[agentIdx](jointState_, jointAction);
+      utility += reward * jointProb;
     }
 
     return utility;
@@ -281,7 +282,7 @@ private:
     const auto& allJointActions = jointActionSpace_.getJointActionSpace();
 
     for (const auto& jointAction : allJointActions) {
-      JointReward rewards = R_(jointAction);
+      double reward = R_[agentIdx](jointState_, jointAction);
 
       // For each agent j and action a^j
       for (int j = 0; j < numAgents_; ++j) {
@@ -296,7 +297,7 @@ private:
           productWithoutJ *= x[k * numActions_ + akIdx];
         }
 
-        grad[j * numActions_ + aIdx] += scale * rewards[agentIdx] * productWithoutJ;
+        grad[j * numActions_ + aIdx] += scale * reward * productWithoutJ;
       }
     }
   }
@@ -313,7 +314,7 @@ private:
         continue;
       }
 
-      JointReward rewards = R_(jointAction);
+      double reward = R_[agentIdx](jointState_, jointAction);
 
       // For each agent j ≠ i
       for (int j = 0; j < numAgents_; ++j) {
@@ -331,12 +332,13 @@ private:
           product *= x[k * numActions_ + akIdx];
         }
 
-        grad[j * numActions_ + aIdx] += scale * rewards[agentIdx] * product;
+        grad[j * numActions_ + aIdx] += scale * reward * product;
       }
     }
   }
 
-  std::function<JointReward(JointAction)> R_;
+  JointState jointState_;
+  JointRewardFunction R_;
   const JointActionSpace& jointActionSpace_;
   int numAgents_;
   int numActions_;
@@ -351,11 +353,11 @@ private:
 
 } // anonymous namespace
 
-JointPolicy NashEquilibriumSolver::solve(const std::function<JointReward(JointAction)>& R,
+JointPolicy NashEquilibriumSolver::solve(const JointRewardFunction& R,
                                          const JointActionSpace& jointActionSpace,
-                                         const std::vector<core::AgentState>& agents)
+                                         const JointState& state)
 {
-  const int numAgents = agents.size();
+  const int numAgents = state.size();
   const int numActions = static_cast<int>(environment::Action::NUM_ACTIONS);
 
   // Create Ipopt application
@@ -375,7 +377,7 @@ JointPolicy NashEquilibriumSolver::solve(const std::function<JointReward(JointAc
   }
 
   // Create NLP problem
-  Ipopt::SmartPtr<NashNLP> nlp = new NashNLP(R, jointActionSpace, numAgents, numActions);
+  Ipopt::SmartPtr<NashNLP> nlp = new NashNLP(state, R, jointActionSpace, numAgents, numActions);
 
   // Solve
   status = app->OptimizeTNLP(nlp);

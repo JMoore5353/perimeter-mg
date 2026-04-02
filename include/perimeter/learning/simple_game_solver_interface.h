@@ -4,7 +4,8 @@
 #include "perimeter/core/AgentState.h"
 #include "perimeter/learning/joint.h"
 
-namespace perimeter {
+namespace perimeter
+{
 
 class SimpleGameSolverInterface
 {
@@ -16,9 +17,8 @@ public:
   *  @param agents is a vector of AgentStates that contains the type of each agent (attacker vs defender)
   *  @return JointPolicy, one SingleAgentSimpleGamePolicy per agent.
   */
-  virtual JointPolicy solve(const std::function<JointReward(JointAction)>& R,
-                            const JointActionSpace& jointActionSpace,
-                            const std::vector<core::AgentState>& agents) = 0;
+  virtual JointPolicy solve(const JointRewardFunction& R, const JointActionSpace& jointActionSpace,
+                            const JointState& state) = 0;
   virtual ~SimpleGameSolverInterface() = default;
 };
 

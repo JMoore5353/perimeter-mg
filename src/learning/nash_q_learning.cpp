@@ -1,5 +1,4 @@
 #include "perimeter/learning/nash_q_learning.h"
-#include <stdexcept>
 
 namespace perimeter
 {
@@ -15,20 +14,25 @@ NashQLearning::NashQLearning(int id, int numAgents, double gamma,
     , jointActionSpace_{jointActionSpace}
 {}
 
+const std::function<double(JointState, JointAction)> NashQLearning::getRewardFunction()
+{
+  return [this](const JointState& state, const JointAction& action) { return Q(state, action); };
+}
+
 void NashQLearning::setEquilibriumPolicy(const JointPolicy& newPolicy)
 {
   // TODO: NEXT STEPS: Add unit tests to this qlearning module. (Ask AI? I'm not sure really the best way to test this)
   policy_ = newPolicy.at(id_);
 }
 
-void NashQLearning::updateJointQTable(const std::vector<core::AgentState>& prevAgentStates,
+void NashQLearning::updateJointQTable(const JointState& prevAgentStates,
                                       const JointAction& prevJointAction,
                                       const std::vector<double>& stepRewards,
-                                      const std::vector<core::AgentState>& currAgentStates,
+                                      const JointState& currAgentStates,
                                       const JointPolicy& jointPolicy)
 {
-  const core::AgentState& s = prevAgentStates.at(id_);
-  const core::AgentState& s_prime = currAgentStates.at(id_);
+  const JointState& s = prevAgentStates;
+  const JointState& s_prime = currAgentStates;
   const JointAction& a = prevJointAction;
   double reward = stepRewards.at(id_);
 
@@ -42,16 +46,14 @@ void NashQLearning::updateJointQTable(const std::vector<core::AgentState>& prevA
   Q_s_a_[s][a] = Q(s, a) + alpha * (reward + gamma_ * utility - Q(s, a));
 }
 
-const environment::Action
-NashQLearning::sampleEpsGreedyPolicy(std::mt19937& rg,
-                                     const std::vector<core::AgentState>& agentStates)
+const environment::Action NashQLearning::sampleEpsGreedyPolicy(std::mt19937& rg,
+                                                               const JointState& state)
 {
-  const core::AgentState& selfState = agentStates[id_];
-  if (!N_s_.contains(selfState)) {
-    N_s_[selfState] = 1;
+  if (!N_s_.contains(state)) {
+    N_s_[state] = 1;
   }
 
-  double eps = 1 / N_s_[selfState];
+  double eps = 1 / N_s_[state];
   std::bernoulli_distribution dist(eps);
   if (dist(rg) <= eps) {
     return randomPolicy_.sampleAction(rg);
@@ -59,11 +61,8 @@ NashQLearning::sampleEpsGreedyPolicy(std::mt19937& rg,
   return policy_.sampleAction(rg);
 }
 
-void NashQLearning::updateN(const std::vector<core::AgentState>& agentStates,
-                            const JointAction& jointAction)
+void NashQLearning::updateN(const JointState& state, const JointAction& jointAction)
 {
-  const core::AgentState state = agentStates.at(id_);
-
   if (!N_s_a_.contains(state) || !N_s_a_[state].contains(jointAction)) {
     N_s_a_[state][jointAction] = 1;
   } else {
@@ -71,7 +70,7 @@ void NashQLearning::updateN(const std::vector<core::AgentState>& agentStates,
   }
 }
 
-double NashQLearning::Q(const core::AgentState& state, const JointAction& jointAction)
+double NashQLearning::Q(const JointState& state, const JointAction& jointAction)
 {
   if (!Q_s_a_.contains(state) || !Q_s_a_[state].contains(jointAction)) {
     Q_s_a_[state][jointAction] = computeInitialQTableValue(state, jointAction);
@@ -79,7 +78,7 @@ double NashQLearning::Q(const core::AgentState& state, const JointAction& jointA
   return Q_s_a_[state][jointAction];
 }
 
-int NashQLearning::N(const core::AgentState& state, const JointAction& jointAction)
+int NashQLearning::N(const JointState& state, const JointAction& jointAction)
 {
   if (!N_s_a_.contains(state) || !N_s_a_[state].contains(jointAction)) {
     N_s_a_[state][jointAction] = 1;
@@ -87,9 +86,10 @@ int NashQLearning::N(const core::AgentState& state, const JointAction& jointActi
   return N_s_a_[state][jointAction];
 }
 
-double NashQLearning::computeInitialQTableValue(const core::AgentState& state,
+double NashQLearning::computeInitialQTableValue(const JointState& state,
                                                 const JointAction& jointAction) const
 {
+  // Bootstrap your Q table here
   return 0.0;
 }
 

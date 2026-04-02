@@ -33,9 +33,9 @@ void runSim(const int endT, const std::string filename)
   std::ofstream outFile;
   outFile.open(filename);
 
-  const environment::InitializationConfig config{.radius{3},
+  const environment::InitializationConfig config{.radius{2},
                                                  .attackerCount{1},
-                                                 .defenderCount{1},
+                                                 .defenderCount{0},
                                                  .seed{123U}};
   environment::InitializedEnvironment initialized = createInitialWorld(config);
   environment::Simulator simulator{std::move(initialized.grid), std::move(initialized.world),
@@ -57,14 +57,17 @@ void runSim(const int endT, const std::string filename)
   }
 
   NashEquilibriumSolver nashSolver;
-  const auto rewardFunction = simulator.getRewardFunction();
+  JointRewardFunction jointRewardFunction;
+  for (auto& agent : qLearners) {
+    jointRewardFunction.push_back(agent.getRewardFunction());
+  }
   std::vector<int> solveTimes;
 
   std::vector<core::AgentState> currAgentStates = simulator.world().agents;
   std::vector<core::AgentState> prevAgentStates = currAgentStates;
   JointAction prevJointAction(numAgents, environment::Action::STAY);
   std::vector<double> stepRewards(numAgents, 0.0);
-  while (t < endT) {
+  while (t <= endT) {
     std::ostringstream outPrefix;
     outPrefix << "\rStarting simulation step " << t << "...";
     std::cout << outPrefix.str() << std::flush;
@@ -73,13 +76,13 @@ void runSim(const int endT, const std::string filename)
     std::cout << outPrefix.str() << " Computing stochastic policy..." << std::flush;
     auto start = std::chrono::steady_clock::now();
     JointPolicy jointPolicy =
-      nashSolver.solve(rewardFunction, jointActionSpace, simulator.world().agents);
+      nashSolver.solve(jointRewardFunction, jointActionSpace, simulator.world().agents);
     // JointPolicy jointPolicy = computeCorrelatedEquilibriumPolicy();
     // JointPolicy jointPolicy = computeFictitiousPlayPolicy();
     // JointPolicy jointPolicy = computeRegretMatchingPolicy();
     // JointPolicy jointPolicy = getRandomJointPolicy(rng, numAgents);
     auto end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     solveTimes.push_back(duration.count());
 
     // Update Q tables
@@ -131,7 +134,7 @@ void runSim(const int endT, const std::string filename)
 
 int main(int argc, char** argv)
 {
-  int endT{30};
+  int endT{3000};
   perimeter::runSim(endT, "sim.json");
   return 0;
 }

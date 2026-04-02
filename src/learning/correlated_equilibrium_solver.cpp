@@ -1,8 +1,8 @@
 #include "perimeter/learning/correlated_equilibrium_solver.h"
 
-JointPolicy CorrelatedEquilibriumSolver::solve(const std::function<JointReward(JointAction)>& R,
+JointPolicy CorrelatedEquilibriumSolver::solve(const JointRewardFunction& R,
                                                const JointActionSpace& jointActionSpace,
-                                               const std::vector<AgentState>& agents)
+                                               const JointState& state)
 {
   // TODO: Continue here! Update the cost function for the problem based on the conversation with Gemini.
   // TODO: Verify Copilot's output. You asked it to make the R function, but I think it is computing utility...

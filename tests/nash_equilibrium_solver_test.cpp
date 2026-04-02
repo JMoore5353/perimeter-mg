@@ -35,13 +35,13 @@ bool checkNonNegativeProbabilities(const SingleAgentSimpleGamePolicy& policy) {
 }
 
 // Helper to compute expected utility for an agent given policies
-double computeExpectedUtility(const std::function<JointReward(JointAction)>& R,
+double computeExpectedUtility(const JointRewardFunction& R,
                               const JointActionSpace& jointActionSpace,
                               const JointPolicy& policy,
-                              int agentIdx) {
+                              int agentIdx,
+                              const JointState& state) {
   double utility = 0.0;
   const auto& allJointActions = jointActionSpace.getJointActionSpace();
-  std::mt19937 rng(42);  // Fixed seed for reproducibility
   
   for (const auto& jointAction : allJointActions) {
     // Compute joint probability
@@ -50,24 +50,25 @@ double computeExpectedUtility(const std::function<JointReward(JointAction)>& R,
       jointProb *= policy[j].getProbability(jointAction[j]);
     }
     
-    // Get reward
-    JointReward rewards = R(jointAction);
-    utility += rewards[agentIdx] * jointProb;
+    // Get reward for this agent
+    double reward = R[agentIdx](state, jointAction);
+    utility += reward * jointProb;
   }
   
   return utility;
 }
 
 // Helper to check if policy is a Nash equilibrium (no profitable deviations)
-bool isNashEquilibrium(const std::function<JointReward(JointAction)>& R,
+bool isNashEquilibrium(const JointRewardFunction& R,
                        const JointActionSpace& jointActionSpace,
                        const JointPolicy& policy,
+                       const JointState& state,
                        double tolerance = 1e-3) {
   int numAgents = policy.size();
   
   // For each agent, check if they can profitably deviate
   for (int i = 0; i < numAgents; ++i) {
-    double currentUtility = computeExpectedUtility(R, jointActionSpace, policy, i);
+    double currentUtility = computeExpectedUtility(R, jointActionSpace, policy, i, state);
     
     // Check all possible pure strategy deviations
     for (int a = 0; a < static_cast<int>(Action::NUM_ACTIONS); ++a) {
@@ -75,7 +76,7 @@ bool isNashEquilibrium(const std::function<JointReward(JointAction)>& R,
       JointPolicy deviatedPolicy = policy;
       deviatedPolicy[i] = SingleAgentSimpleGamePolicy(static_cast<Action>(a));
       
-      double deviationUtility = computeExpectedUtility(R, jointActionSpace, deviatedPolicy, i);
+      double deviationUtility = computeExpectedUtility(R, jointActionSpace, deviatedPolicy, i, state);
       
       // If deviation is profitable (beyond tolerance), not a Nash equilibrium
       if (deviationUtility > currentUtility + tolerance) {
@@ -89,8 +90,9 @@ bool isNashEquilibrium(const std::function<JointReward(JointAction)>& R,
 
 TEST(NashEquilibriumSolverTest, SolverReturnsValidPolicies) {
   // Simple constant reward game
-  auto R = [](const JointAction& ja) -> JointReward {
-    return {1.0, 1.0};
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double { return 1.0; },
+    [](const JointState& js, const JointAction& ja) -> double { return 1.0; }
   };
   
   std::vector<AgentState> agents = {
@@ -115,11 +117,13 @@ TEST(NashEquilibriumSolverTest, SolverReturnsValidPolicies) {
 
 TEST(NashEquilibriumSolverTest, CoordinationGameHasMultipleEquilibria) {
   // Coordination game: both agents get reward 2 if they choose same action, 0 otherwise
-  auto R = [](const JointAction& ja) -> JointReward {
-    if (ja[0] == ja[1]) {
-      return {2.0, 2.0};
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      return (ja[0] == ja[1]) ? 2.0 : 0.0;
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      return (ja[0] == ja[1]) ? 2.0 : 0.0;
     }
-    return {0.0, 0.0};
   };
   
   std::vector<AgentState> agents = {
@@ -140,25 +144,42 @@ TEST(NashEquilibriumSolverTest, CoordinationGameHasMultipleEquilibria) {
   EXPECT_TRUE(checkNonNegativeProbabilities(policy[1]));
   
   // Verify it's a Nash equilibrium
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
 }
 
 TEST(NashEquilibriumSolverTest, MatchingPenniesHasMixedEquilibrium) {
   // Matching pennies: Agent 0 wants to match, Agent 1 wants to mismatch
   // Using only first two actions (EAST and NORTHEAST) for simplicity
-  auto R = [](const JointAction& ja) -> JointReward {
-    int action0 = static_cast<int>(ja[0]);
-    int action1 = static_cast<int>(ja[1]);
-    
-    // Only consider first two actions
-    if (action0 >= 2 || action1 >= 2) {
-      return {-10.0, -10.0};  // Discourage other actions
-    }
-    
-    if (action0 == action1) {
-      return {1.0, -1.0};  // Agent 0 wins
-    } else {
-      return {-1.0, 1.0};  // Agent 1 wins
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Only consider first two actions
+      if (action0 >= 2 || action1 >= 2) {
+        return -10.0;  // Discourage other actions
+      }
+      
+      if (action0 == action1) {
+        return 1.0;  // Agent 0 wins
+      } else {
+        return -1.0;
+      }
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Only consider first two actions
+      if (action0 >= 2 || action1 >= 2) {
+        return -10.0;  // Discourage other actions
+      }
+      
+      if (action0 == action1) {
+        return -1.0;  // Agent 1 loses
+      } else {
+        return 1.0;  // Agent 1 wins
+      }
     }
   };
   
@@ -197,24 +218,46 @@ TEST(NashEquilibriumSolverTest, MatchingPenniesHasMixedEquilibrium) {
 TEST(NashEquilibriumSolverTest, PrisonersDilemmaFindsEquilibrium) {
   // Prisoner's dilemma: defect (action 0) dominates cooperate (action 1)
   // Using only first two actions
-  auto R = [](const JointAction& ja) -> JointReward {
-    int action0 = static_cast<int>(ja[0]);
-    int action1 = static_cast<int>(ja[1]);
-    
-    // Discourage other actions
-    if (action0 >= 2 || action1 >= 2) {
-      return {-100.0, -100.0};
-    }
-    
-    // action 0 = defect, action 1 = cooperate
-    if (action0 == 1 && action1 == 1) {  // both cooperate
-      return {3.0, 3.0};
-    } else if (action0 == 0 && action1 == 1) {  // agent 0 defects, agent 1 cooperates
-      return {5.0, 0.0};
-    } else if (action0 == 1 && action1 == 0) {  // agent 0 cooperates, agent 1 defects
-      return {0.0, 5.0};
-    } else {  // both defect
-      return {1.0, 1.0};
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Discourage other actions
+      if (action0 >= 2 || action1 >= 2) {
+        return -100.0;
+      }
+      
+      // action 0 = defect, action 1 = cooperate
+      if (action0 == 1 && action1 == 1) {  // both cooperate
+        return 3.0;
+      } else if (action0 == 0 && action1 == 1) {  // agent 0 defects, agent 1 cooperates
+        return 5.0;
+      } else if (action0 == 1 && action1 == 0) {  // agent 0 cooperates, agent 1 defects
+        return 0.0;
+      } else {  // both defect
+        return 1.0;
+      }
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Discourage other actions
+      if (action0 >= 2 || action1 >= 2) {
+        return -100.0;
+      }
+      
+      // action 0 = defect, action 1 = cooperate
+      if (action0 == 1 && action1 == 1) {  // both cooperate
+        return 3.0;
+      } else if (action0 == 0 && action1 == 1) {  // agent 0 defects, agent 1 cooperates
+        return 0.0;
+      } else if (action0 == 1 && action1 == 0) {  // agent 0 cooperates, agent 1 defects
+        return 5.0;
+      } else {  // both defect
+        return 1.0;
+      }
     }
   };
   
@@ -236,7 +279,7 @@ TEST(NashEquilibriumSolverTest, PrisonersDilemmaFindsEquilibrium) {
   EXPECT_TRUE(checkNonNegativeProbabilities(policy[1]));
   
   // Verify it's a Nash equilibrium
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
   
   // Nash equilibrium in prisoner's dilemma should heavily favor defecting (action 0)
   double prob0_defect = policy[0].getProbability(Action::EAST);
@@ -248,16 +291,40 @@ TEST(NashEquilibriumSolverTest, PrisonersDilemmaFindsEquilibrium) {
 
 TEST(NashEquilibriumSolverTest, ThreePlayerGameFindsEquilibrium) {
   // Simple three-player game
-  auto R = [](const JointAction& ja) -> JointReward {
-    // Reward agents for coordinating on same action
-    if (ja[0] == ja[1] && ja[1] == ja[2]) {
-      return {3.0, 3.0, 3.0};
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      // Reward agents for coordinating on same action
+      if (ja[0] == ja[1] && ja[1] == ja[2]) {
+        return 3.0;
+      }
+      // Partial coordination
+      if (ja[0] == ja[1] || ja[1] == ja[2] || ja[0] == ja[2]) {
+        return 1.0;
+      }
+      return 0.0;
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      // Reward agents for coordinating on same action
+      if (ja[0] == ja[1] && ja[1] == ja[2]) {
+        return 3.0;
+      }
+      // Partial coordination
+      if (ja[0] == ja[1] || ja[1] == ja[2] || ja[0] == ja[2]) {
+        return 1.0;
+      }
+      return 0.0;
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      // Reward agents for coordinating on same action
+      if (ja[0] == ja[1] && ja[1] == ja[2]) {
+        return 3.0;
+      }
+      // Partial coordination
+      if (ja[0] == ja[1] || ja[1] == ja[2] || ja[0] == ja[2]) {
+        return 1.0;
+      }
+      return 0.0;
     }
-    // Partial coordination
-    if (ja[0] == ja[1] || ja[1] == ja[2] || ja[0] == ja[2]) {
-      return {1.0, 1.0, 1.0};
-    }
-    return {0.0, 0.0, 0.0};
   };
   
   std::vector<AgentState> agents = {
@@ -279,22 +346,22 @@ TEST(NashEquilibriumSolverTest, ThreePlayerGameFindsEquilibrium) {
   }
   
   // Verify it's a Nash equilibrium
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
 }
 
 TEST(NashEquilibriumSolverTest, PureStrategyDominanceIsRespected) {
   // Game where action 0 strictly dominates all other actions for agent 0
-  auto R = [](const JointAction& ja) -> JointReward {
-    int action0 = static_cast<int>(ja[0]);
-    int action1 = static_cast<int>(ja[1]);
-    
-    // Agent 0 always gets more reward with action 0
-    double reward0 = (action0 == 0) ? 10.0 : 1.0;
-    
-    // Agent 1's reward is independent
-    double reward1 = (action1 == 0) ? 5.0 : 2.0;
-    
-    return {reward0, reward1};
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      // Agent 0 always gets more reward with action 0
+      return (action0 == 0) ? 10.0 : 1.0;
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action1 = static_cast<int>(ja[1]);
+      // Agent 1's reward is independent
+      return (action1 == 0) ? 5.0 : 2.0;
+    }
   };
   
   std::vector<AgentState> agents = {
@@ -317,30 +384,52 @@ TEST(NashEquilibriumSolverTest, PureStrategyDominanceIsRespected) {
   EXPECT_GT(prob1_action0, 0.9);
   
   // Verify it's a Nash equilibrium
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
 }
 
 TEST(NashEquilibriumSolverTest, AsymmetricGameFindsEquilibrium) {
   // Asymmetric game where agents have different roles
-  auto R = [](const JointAction& ja) -> JointReward {
-    int action0 = static_cast<int>(ja[0]);
-    int action1 = static_cast<int>(ja[1]);
-    
-    // Limit to first 3 actions for faster testing
-    if (action0 >= 3 || action1 >= 3) {
-      return {-50.0, -50.0};
-    }
-    
-    // Agent 0 is a "leader", agent 1 is a "follower"
-    // Leader prefers action 0, follower should respond optimally
-    if (action0 == 0 && action1 == 0) {
-      return {5.0, 3.0};  // Leader happy, follower okay
-    } else if (action0 == 0 && action1 == 1) {
-      return {3.0, 1.0};  // Leader okay, follower worse
-    } else if (action0 == 1 && action1 == 1) {
-      return {2.0, 4.0};  // Leader okay, follower happy
-    } else {
-      return {1.0, 1.0};  // Both unhappy
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Limit to first 3 actions for faster testing
+      if (action0 >= 3 || action1 >= 3) {
+        return -50.0;
+      }
+      
+      // Agent 0 is a "leader", agent 1 is a "follower"
+      // Leader prefers action 0, follower should respond optimally
+      if (action0 == 0 && action1 == 0) {
+        return 5.0;  // Leader happy
+      } else if (action0 == 0 && action1 == 1) {
+        return 3.0;  // Leader okay
+      } else if (action0 == 1 && action1 == 1) {
+        return 2.0;  // Leader okay
+      } else {
+        return 1.0;  // Leader unhappy
+      }
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Limit to first 3 actions for faster testing
+      if (action0 >= 3 || action1 >= 3) {
+        return -50.0;
+      }
+      
+      // Agent 1 is a "follower"
+      if (action0 == 0 && action1 == 0) {
+        return 3.0;  // Follower okay
+      } else if (action0 == 0 && action1 == 1) {
+        return 1.0;  // Follower worse
+      } else if (action0 == 1 && action1 == 1) {
+        return 4.0;  // Follower happy
+      } else {
+        return 1.0;  // Follower unhappy
+      }
     }
   };
   
@@ -362,28 +451,49 @@ TEST(NashEquilibriumSolverTest, AsymmetricGameFindsEquilibrium) {
   EXPECT_TRUE(checkNonNegativeProbabilities(policy[1]));
   
   // Verify it's a Nash equilibrium
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
 }
 
 TEST(NashEquilibriumSolverTest, ZeroSumGameFindsEquilibrium) {
   // Zero-sum game: agent 0's gain is agent 1's loss
-  auto R = [](const JointAction& ja) -> JointReward {
-    int action0 = static_cast<int>(ja[0]);
-    int action1 = static_cast<int>(ja[1]);
-    
-    // Only use first 3 actions
-    if (action0 >= 3 || action1 >= 3) {
-      return {-100.0, 100.0};
-    }
-    
-    // Rock-paper-scissors style payoffs
-    int diff = (action0 - action1 + 3) % 3;
-    if (diff == 0) {
-      return {0.0, 0.0};  // tie
-    } else if (diff == 1) {
-      return {1.0, -1.0};  // agent 0 wins
-    } else {
-      return {-1.0, 1.0};  // agent 1 wins
+  JointRewardFunction R = {
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Only use first 3 actions
+      if (action0 >= 3 || action1 >= 3) {
+        return -100.0;
+      }
+      
+      // Rock-paper-scissors style payoffs
+      int diff = (action0 - action1 + 3) % 3;
+      if (diff == 0) {
+        return 0.0;  // tie
+      } else if (diff == 1) {
+        return 1.0;  // agent 0 wins
+      } else {
+        return -1.0;  // agent 1 wins
+      }
+    },
+    [](const JointState& js, const JointAction& ja) -> double {
+      int action0 = static_cast<int>(ja[0]);
+      int action1 = static_cast<int>(ja[1]);
+      
+      // Only use first 3 actions
+      if (action0 >= 3 || action1 >= 3) {
+        return 100.0;
+      }
+      
+      // Rock-paper-scissors style payoffs (opposite of agent 0)
+      int diff = (action0 - action1 + 3) % 3;
+      if (diff == 0) {
+        return 0.0;  // tie
+      } else if (diff == 1) {
+        return -1.0;  // agent 0 wins (agent 1 loses)
+      } else {
+        return 1.0;  // agent 1 wins
+      }
     }
   };
   
@@ -405,7 +515,7 @@ TEST(NashEquilibriumSolverTest, ZeroSumGameFindsEquilibrium) {
   EXPECT_TRUE(checkNonNegativeProbabilities(policy[1]));
   
   // Verify it's a Nash equilibrium (most important check)
-  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy));
+  EXPECT_TRUE(isNashEquilibrium(R, jointActionSpace, policy, agents));
   
   // Note: In rock-paper-scissors, the Nash equilibrium is uniform over the three actions,
   // but due to numerical optimization, the solver might find slightly different distributions

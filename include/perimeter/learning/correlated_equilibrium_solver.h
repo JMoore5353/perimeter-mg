@@ -10,9 +10,8 @@ class CorrelatedEquilibriumSolver : public SimpleGameSolverInterface
 public:
   CorrelatedEquilibriumSolver() = default;
 
-  JointPolicy solve(const std::function<JointReward(JointAction)>& R,
-                    const JointActionSpace& jointActionSpace,
-                    const std::vector<AgentState>& agents) override final;
+  JointPolicy solve(const JointRewardFunction& R, const JointActionSpace& jointActionSpace,
+                    const JointState& state) override final;
 
 private:
 };

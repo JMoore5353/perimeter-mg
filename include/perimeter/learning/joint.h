@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "perimeter/core/AgentState.h"
 #include "perimeter/environment/Action.h"
 #include "perimeter/learning/single_agent_simple_game_policy.h"
 
@@ -35,6 +36,28 @@ struct ActionVectorHash
 
 using JointPolicy = std::vector<SingleAgentSimpleGamePolicy>;
 using JointReward = std::vector<double>;
+
+using JointState = std::vector<core::AgentState>;
+struct StateVectorHash
+{
+  size_t operator()(const JointState& js) const noexcept
+  {
+    size_t seed = 0;
+
+    auto combine = [](size_t& seed, size_t value) {
+      seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+    };
+
+    for (const auto& state : js) {
+      size_t h = std::hash<core::AgentState>{}(state);
+      combine(seed, h);
+    }
+
+    return seed;
+  }
+};
+
+using JointRewardFunction = std::vector<std::function<double(JointState, JointAction)>>;
 
 class JointActionSpace
 {
