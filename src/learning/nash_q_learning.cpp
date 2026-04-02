@@ -64,10 +64,14 @@ const environment::Action NashQLearning::sampleEpsGreedyPolicy(std::mt19937& rg,
 void NashQLearning::updateN(const JointState& state, const JointAction& jointAction)
 {
   if (!N_s_a_.contains(state) || !N_s_a_[state].contains(jointAction)) {
-    N_s_a_[state][jointAction] = 1;
-  } else {
-    N_s_a_[state][jointAction] += 1;
+    N_s_a_[state][jointAction] = 0;
   }
+  if (!N_s_.contains(state)) {
+    N_s_[state] = 0;
+  }
+
+  N_s_a_[state][jointAction] += 1;
+  N_s_[state] += 1;
 }
 
 double NashQLearning::Q(const JointState& state, const JointAction& jointAction)
