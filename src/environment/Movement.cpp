@@ -73,10 +73,10 @@ Action sampleActionOutcome(Action intended, double roll) noexcept {
         return Action::STAY;
     }
 
-    if (roll < 0.70) {
+    if (roll < INTENDED_ACTION_PROBABILITY) {
         return intended;
     }
-    if (roll < 0.85) {
+    if (roll < INTENDED_ACTION_PROBABILITY + DEVIATED_ACTION_PROBABILITY) {
         return turnLeft(intended);
     }
     return turnRight(intended);

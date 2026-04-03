@@ -6,21 +6,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# LP library
-include(FetchContent)
-message(STATUS "Fetching HiGHS repository...")
-FetchContent_Declare(
-    highs
-    GIT_REPOSITORY https://github.com/ERGO-Code/HiGHS.git
-    GIT_TAG v1.13.1
-)
-FetchContent_MakeAvailable(highs)
-
 # Ipopt for Nash equilibrium solver
 find_library(IPOPT_LIBRARY NAMES ipopt REQUIRED)
 find_path(IPOPT_INCLUDE_DIR NAMES coin/IpTNLP.hpp REQUIRED)
 message(STATUS "Found Ipopt library: ${IPOPT_LIBRARY}")
 message(STATUS "Found Ipopt include: ${IPOPT_INCLUDE_DIR}")
+
+# zlib for checkpoint compression
+find_package(ZLIB REQUIRED)
+message(STATUS "Found ZLIB: ${ZLIB_LIBRARIES}")
 
 add_library(perimeter_geometry
     src/geometry/Hex.cpp
@@ -36,11 +30,12 @@ add_library(perimeter_geometry
     src/learning/single_agent_simple_game_policy.cpp
     src/learning/joint.cpp
     src/learning/nash_equilibrium_solver.cpp
+    src/learning/qtable_checkpoint.cpp
 )
 target_link_libraries(perimeter_geometry
     PUBLIC
-        highs
         ${IPOPT_LIBRARY}
+        ZLIB::ZLIB
 )
 target_include_directories(perimeter_geometry
     PUBLIC
@@ -87,6 +82,7 @@ add_executable(geometry_tests
     tests/joint_test.cpp
     tests/nash_q_learning_test.cpp
     tests/nash_equilibrium_solver_test.cpp
+    tests/qtable_checkpoint_test.cpp
 )
 
 target_link_libraries(geometry_tests

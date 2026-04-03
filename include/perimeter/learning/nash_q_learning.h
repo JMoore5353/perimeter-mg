@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "perimeter/core/AgentState.h"
 #include "perimeter/environment/Action.h"
 #include "perimeter/learning/joint.h"
 #include "perimeter/learning/single_agent_simple_game_policy.h"
@@ -14,10 +15,20 @@
 namespace perimeter
 {
 
+// Type aliases for Q-table structures
+using QTable = std::unordered_map<JointState, 
+                                  std::unordered_map<JointAction, double, ActionVectorHash>,
+                                  StateVectorHash>;
+using NsTable = std::unordered_map<JointState, int, StateVectorHash>;
+using NsaTable = std::unordered_map<JointState,
+                                    std::unordered_map<JointAction, int, ActionVectorHash>,
+                                    StateVectorHash>;
+
 class NashQLearning
 {
 public:
-  NashQLearning(int id, int numAgents, double gamma, const JointActionSpace& jointActionSpace);
+  NashQLearning(int id, int numAgents, double gamma, const JointActionSpace& jointActionSpace,
+                core::AgentType agentType);
 
   const std::function<double(JointState, JointAction)> getRewardFunction();
 
@@ -29,8 +40,24 @@ public:
   void updateN(const JointState& agentStates, const JointAction& jointAction);
   double Q(const JointState& state, const JointAction& jointAction);
 
+  // Getters for checkpoint serialization
+  int getId() const { return id_; }
+  core::AgentType getAgentType() const { return agentType_; }
+  int getNumAgents() const { return numAgents_; }
+  double getGamma() const { return gamma_; }
+  
+  const auto& getQTable() const { return Q_s_a_; }
+  const auto& getNsTable() const { return N_s_; }
+  const auto& getNsaTable() const { return N_s_a_; }
+  
+  // Setters for checkpoint loading
+  void setQTable(QTable table) { Q_s_a_ = std::move(table); }
+  void setNsTable(NsTable table) { N_s_ = std::move(table); }
+  void setNsaTable(NsaTable table) { N_s_a_ = std::move(table); }
+
 private:
   int id_;
+  core::AgentType agentType_;
   int numAgents_;
   double gamma_;
   SingleAgentSimpleGamePolicy randomPolicy_;

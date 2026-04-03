@@ -25,11 +25,11 @@ TEST(MovementTest, NeighborMapsAllActionsToExpectedHexes) {
 
 TEST(MovementTest, SampleActionOutcomeUsesExpectedProbabilityBuckets) {
     EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.00), Action::EAST);
-    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.69), Action::EAST);
-    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.70), Action::NORTHEAST);
-    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.84), Action::NORTHEAST);
-    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.85), Action::SOUTHEAST);
-    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.99), Action::SOUTHEAST);
+    EXPECT_EQ(sampleActionOutcome(Action::EAST, 0.9*INTENDED_ACTION_PROBABILITY), Action::EAST);
+    EXPECT_EQ(sampleActionOutcome(Action::EAST, INTENDED_ACTION_PROBABILITY), Action::NORTHEAST);
+    EXPECT_EQ(sampleActionOutcome(Action::EAST, INTENDED_ACTION_PROBABILITY + 0.9*DEVIATED_ACTION_PROBABILITY), Action::NORTHEAST);
+    EXPECT_EQ(sampleActionOutcome(Action::EAST, INTENDED_ACTION_PROBABILITY + DEVIATED_ACTION_PROBABILITY), Action::SOUTHEAST);
+    EXPECT_EQ(sampleActionOutcome(Action::EAST, INTENDED_ACTION_PROBABILITY + 2*0.9*DEVIATED_ACTION_PROBABILITY), Action::SOUTHEAST);
     EXPECT_EQ(sampleActionOutcome(Action::STAY, 0.50), Action::STAY);
 }
 
@@ -45,7 +45,7 @@ TEST(MovementTest, ResolveSingleMoveStaysWhenIntendedDirectionHitsWall) {
 TEST(MovementTest, ResolveSingleMoveClampsInvalidSampledAdjacentMove) {
     const geometry::HexGrid grid(1);
     const geometry::Hex current{1, 0};
-    const geometry::Hex next = resolveSingleMoveWithRoll(current, Action::SOUTHWEST, grid, 0.80);
+    const geometry::Hex next = resolveSingleMoveWithRoll(current, Action::SOUTHWEST, grid, INTENDED_ACTION_PROBABILITY + 0.9*DEVIATED_ACTION_PROBABILITY);
     EXPECT_EQ(next, current);
 }
 

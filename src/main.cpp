@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -14,10 +15,70 @@
 #include "perimeter/learning/joint.h"
 #include "perimeter/learning/nash_equilibrium_solver.h"
 #include "perimeter/learning/nash_q_learning.h"
+#include "perimeter/learning/qtable_checkpoint.h"
 #include "perimeter/visualization/JsonViewer.h"
 
 namespace perimeter
 {
+
+// Command-line configuration
+struct SimConfig
+{
+  int endT = 3000;
+  std::string outputFile = "sim.json";
+  std::string loadCheckpoint = "";  // Empty = start fresh
+  int saveInterval = 1000;          // Save every N steps
+  std::string checkpointDir = "qtables";
+  int hexRadius = 3;
+  int numAttackers = 1;
+  int numDefenders = 1;
+  std::uint16_t seed = 123U;
+};
+
+SimConfig parseCommandLine(int argc, char** argv)
+{
+  SimConfig config;
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+
+    if (arg == "--help" || arg == "-h") {
+      std::cout << "Usage: " << argv[0] << " [OPTIONS]\n"
+                << "Options:\n"
+                << "  --steps <N>              Number of simulation steps (default: 3000)\n"
+                << "  --output <file>          Output JSON file (default: sim.json)\n"
+                << "  --load-qtable <path>     Load Q-tables from checkpoint (pattern with agent*)\n"
+                << "  --save-interval <N>      Save checkpoint every N steps (default: 1000)\n"
+                << "  --checkpoint-dir <dir>   Checkpoint directory (default: qtables)\n"
+                << "  --hex-radius <N>         Radius of hex grid (default: 3)\n"
+                << "  --num-attackers <N>      Number of attackers (default: 1)\n"
+                << "  --num-defenders <N>      Number of defenders (default: 1)\n"
+                << "  --seed <N>               Seed for random number generators (default: 123)\n"
+                << "  --help, -h               Show this help message\n";
+      std::exit(0);
+    } else if (arg == "--steps" && i + 1 < argc) {
+      config.endT = std::stoi(argv[++i]);
+    } else if (arg == "--output" && i + 1 < argc) {
+      config.outputFile = argv[++i];
+    } else if (arg == "--load-qtable" && i + 1 < argc) {
+      config.loadCheckpoint = argv[++i];
+    } else if (arg == "--save-interval" && i + 1 < argc) {
+      config.saveInterval = std::stoi(argv[++i]);
+    } else if (arg == "--checkpoint-dir" && i + 1 < argc) {
+      config.checkpointDir = argv[++i];
+    } else if (arg == "--hex-radius" && i + 1 < argc) {
+      config.hexRadius = std::stoi(argv[++i]);
+    } else if (arg == "--num-attackers" && i + 1 < argc) {
+      config.numAttackers = std::stoi(argv[++i]);
+    } else if (arg == "--num-defenders" && i + 1 < argc) {
+      config.numDefenders = std::stoi(argv[++i]);
+    } else if (arg == "--seed" && i + 1 < argc) {
+      config.seed = std::stoi(argv[++i]);
+    }
+  }
+
+  return config;
+}
 
 JointPolicy getRandomJointPolicy(std::mt19937& rng, const std::size_t numAgents)
 {
@@ -27,16 +88,16 @@ JointPolicy getRandomJointPolicy(std::mt19937& rng, const std::size_t numAgents)
                         1 / static_cast<double>(environment::Action::NUM_ACTIONS)));
 }
 
-void runSim(const int endT, const std::string filename)
+void runSim(const SimConfig& simConfig)
 {
   int t{0};
   std::ofstream outFile;
-  outFile.open(filename);
+  outFile.open(simConfig.outputFile);
 
-  const environment::InitializationConfig config{.radius{2},
-                                                 .attackerCount{1},
-                                                 .defenderCount{0},
-                                                 .seed{123U}};
+  const environment::InitializationConfig config{.radius{simConfig.hexRadius},
+                                                 .attackerCount{simConfig.numAttackers},
+                                                 .defenderCount{simConfig.numDefenders},
+                                                 .seed{simConfig.seed}};
   environment::InitializedEnvironment initialized = createInitialWorld(config);
   environment::Simulator simulator{std::move(initialized.grid), std::move(initialized.world),
                                    config.seed};
@@ -53,7 +114,8 @@ void runSim(const int endT, const std::string filename)
   std::cout << " Done!" << std::endl;
   std::vector<NashQLearning> qLearners;
   for (int i{0}; i < numAgents; ++i) {
-    qLearners.emplace_back(i, numAgents, gamma, jointActionSpace);
+    qLearners.emplace_back(i, numAgents, gamma, jointActionSpace, 
+                           simulator.world().agents[i].type);
   }
 
   NashEquilibriumSolver nashSolver;
@@ -63,11 +125,23 @@ void runSim(const int endT, const std::string filename)
   }
   std::vector<int> solveTimes;
 
+  // Load checkpoint if specified
+  if (!simConfig.loadCheckpoint.empty()) {
+    try {
+      std::cout << "Loading Q-tables from " << simConfig.loadCheckpoint << "..." << std::endl;
+      learning::QTableCheckpoint::loadAll(qLearners, simConfig.loadCheckpoint);
+      std::cout << "Successfully loaded checkpoint!" << std::endl;
+    } catch (const std::exception& e) {
+      std::cerr << "Warning: Failed to load checkpoint: " << e.what() << std::endl;
+      std::cerr << "Starting with fresh Q-tables instead." << std::endl;
+    }
+  }
+
   std::vector<core::AgentState> currAgentStates = simulator.world().agents;
   std::vector<core::AgentState> prevAgentStates = currAgentStates;
   JointAction prevJointAction(numAgents, environment::Action::STAY);
   std::vector<double> stepRewards(numAgents, 0.0);
-  while (t <= endT) {
+  while (t <= simConfig.endT) {
     std::ostringstream outPrefix;
     outPrefix << "\rStarting simulation step " << t << "...";
     std::cout << outPrefix.str() << std::flush;
@@ -116,6 +190,19 @@ void runSim(const int endT, const std::string filename)
     if (outFile.is_open()) {
       outFile << jsonViewer.render(simulator.world(), simulator.grid(), t, step);
     }
+
+    // Save checkpoint periodically
+    if (t > 0 && simConfig.saveInterval > 0 && t % simConfig.saveInterval == 0) {
+      try {
+        std::cout << outPrefix.str() << " Saving checkpoint..." << std::string(58, ' ')
+                  << std::flush;
+        learning::QTableCheckpoint::saveAll(qLearners, config, gamma, t, simConfig.checkpointDir);
+        std::cout << outPrefix.str() << " Checkpoint saved!" << std::string(58, ' ') << std::flush;
+      } catch (const std::exception& e) {
+        std::cerr << "\nWarning: Failed to save checkpoint: " << e.what() << std::endl;
+      }
+    }
+
     ++t;
     std::cout << outPrefix.str() << " Done!" << std::string(58, ' ') << std::flush;
   }
@@ -134,7 +221,7 @@ void runSim(const int endT, const std::string filename)
 
 int main(int argc, char** argv)
 {
-  int endT{3000};
-  perimeter::runSim(endT, "sim.json");
+  perimeter::SimConfig config = perimeter::parseCommandLine(argc, argv);
+  perimeter::runSim(config);
   return 0;
 }

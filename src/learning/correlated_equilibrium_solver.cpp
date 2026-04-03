@@ -4,8 +4,12 @@ JointPolicy CorrelatedEquilibriumSolver::solve(const JointRewardFunction& R,
                                                const JointActionSpace& jointActionSpace,
                                                const JointState& state)
 {
-  // TODO: Continue here! Update the cost function for the problem based on the conversation with Gemini.
-  // TODO: Verify Copilot's output. You asked it to make the R function, but I think it is computing utility...
+  // TODO: Update the Python visualization
+  // TODO: Figure out how to restructure your QLearning module to better test it.
+  // TODO: Unit tests for qtable parser and for qlearning
+  // TODO: QTable writer / parser doesn't store the checkpoint iteration, so it overwrites previous checkpoint data.
+  // In other words, when loading checkpoint 10000, it overwrites checkpoint 1000, and doesn't write checkpoint 11000.
+  // TODO: Change the Python viz to start at a particular step based on cli argument.
 
   // TODO: Write this solve function using the HiGHS linear program solver. Use the following maximization equation
   // with the following constraints, reproduced here in LaTex:

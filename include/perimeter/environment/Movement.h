@@ -9,6 +9,9 @@
 #include "perimeter/geometry/Hex.h"
 #include "perimeter/geometry/Grid.h"
 
+#define INTENDED_ACTION_PROBABILITY 0.99
+#define DEVIATED_ACTION_PROBABILITY (1 - INTENDED_ACTION_PROBABILITY) / 2.0
+
 namespace perimeter::environment {
 
 geometry::Hex neighbor(const geometry::Hex& origin, Action action) noexcept;

@@ -4,8 +4,10 @@ namespace perimeter
 {
 
 NashQLearning::NashQLearning(int id, int numAgents, double gamma,
-                             const JointActionSpace& jointActionSpace)
+                             const JointActionSpace& jointActionSpace,
+                             core::AgentType agentType)
     : id_{id}
+    , agentType_{agentType}
     , numAgents_{numAgents}
     , gamma_{gamma}
     , randomPolicy_{std::vector<double>(static_cast<int>(environment::Action::NUM_ACTIONS),
