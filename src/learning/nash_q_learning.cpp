@@ -4,8 +4,7 @@ namespace perimeter
 {
 
 NashQLearning::NashQLearning(int id, int numAgents, double gamma,
-                             const JointActionSpace& jointActionSpace,
-                             core::AgentType agentType)
+                             const JointActionSpace& jointActionSpace, core::AgentType agentType)
     : id_{id}
     , agentType_{agentType}
     , numAgents_{numAgents}
@@ -29,7 +28,7 @@ void NashQLearning::setEquilibriumPolicy(const JointPolicy& newPolicy)
 
 void NashQLearning::updateJointQTable(const JointState& prevAgentStates,
                                       const JointAction& prevJointAction,
-                                      const std::vector<double>& stepRewards,
+                                      const JointReward& stepRewards,
                                       const JointState& currAgentStates,
                                       const JointPolicy& jointPolicy)
 {
@@ -40,7 +39,6 @@ void NashQLearning::updateJointQTable(const JointState& prevAgentStates,
 
   double utility{0.0};
   for (const JointAction& a_prime : jointActionSpace_.getJointActionSpace()) {
-    // TODO: You could pass in a single vector that has precomputed the jointActionProbability for each joint action in the jointaction space. Would save some time.
     utility += Q(s_prime, a_prime) * jointActionProbability(jointPolicy, a_prime);
   }
 
@@ -57,7 +55,7 @@ const environment::Action NashQLearning::sampleEpsGreedyPolicy(std::mt19937& rg,
 
   double eps = 1 / N_s_[state];
   std::bernoulli_distribution dist(eps);
-  if (dist(rg) <= eps) {
+  if (dist(rg)) {
     return randomPolicy_.sampleAction(rg);
   }
   return policy_.sampleAction(rg);

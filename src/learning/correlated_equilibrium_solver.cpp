@@ -5,8 +5,6 @@ JointPolicy CorrelatedEquilibriumSolver::solve(const JointRewardFunction& R,
                                                const JointState& state)
 {
   // TODO: Update the Python visualization
-  // TODO: Figure out how to restructure your QLearning module to better test it.
-  // TODO: Unit tests for qtable parser and for qlearning
   // TODO: QTable writer / parser doesn't store the checkpoint iteration, so it overwrites previous checkpoint data.
   // In other words, when loading checkpoint 10000, it overwrites checkpoint 1000, and doesn't write checkpoint 11000.
   // TODO: Change the Python viz to start at a particular step based on cli argument.

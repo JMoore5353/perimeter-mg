@@ -16,13 +16,13 @@ namespace perimeter
 {
 
 // Type aliases for Q-table structures
-using QTable = std::unordered_map<JointState, 
-                                  std::unordered_map<JointAction, double, ActionVectorHash>,
-                                  StateVectorHash>;
+using QTable =
+  std::unordered_map<JointState, std::unordered_map<JointAction, double, ActionVectorHash>,
+                     StateVectorHash>;
 using NsTable = std::unordered_map<JointState, int, StateVectorHash>;
-using NsaTable = std::unordered_map<JointState,
-                                    std::unordered_map<JointAction, int, ActionVectorHash>,
-                                    StateVectorHash>;
+using NsaTable =
+  std::unordered_map<JointState, std::unordered_map<JointAction, int, ActionVectorHash>,
+                     StateVectorHash>;
 
 class NashQLearning
 {
@@ -31,29 +31,24 @@ public:
                 core::AgentType agentType);
 
   const std::function<double(JointState, JointAction)> getRewardFunction();
-
-  void setEquilibriumPolicy(const JointPolicy& newPolicy);
-  void updateJointQTable(const JointState& prevAgentStates, const JointAction& prevJointAction,
-                         const std::vector<double>& stepRewards, const JointState& currAgentStates,
-                         const JointPolicy& jointPolicy);
-  const environment::Action sampleEpsGreedyPolicy(std::mt19937& rg, const JointState& agentStates);
-  void updateN(const JointState& agentStates, const JointAction& jointAction);
-  double Q(const JointState& state, const JointAction& jointAction);
-
-  // Getters for checkpoint serialization
   int getId() const { return id_; }
   core::AgentType getAgentType() const { return agentType_; }
   int getNumAgents() const { return numAgents_; }
   double getGamma() const { return gamma_; }
-  
   const auto& getQTable() const { return Q_s_a_; }
   const auto& getNsTable() const { return N_s_; }
   const auto& getNsaTable() const { return N_s_a_; }
-  
-  // Setters for checkpoint loading
+
   void setQTable(QTable table) { Q_s_a_ = std::move(table); }
   void setNsTable(NsTable table) { N_s_ = std::move(table); }
   void setNsaTable(NsaTable table) { N_s_a_ = std::move(table); }
+  void setEquilibriumPolicy(const JointPolicy& newPolicy);
+
+  void updateJointQTable(const JointState& prevAgentStates, const JointAction& prevJointAction,
+                         const JointReward& stepRewards, const JointState& currAgentStates,
+                         const JointPolicy& jointPolicy);
+  const environment::Action sampleEpsGreedyPolicy(std::mt19937& rg, const JointState& agentStates);
+  void updateN(const JointState& agentStates, const JointAction& jointAction);
 
 private:
   int id_;
@@ -74,6 +69,7 @@ private:
 
   double computeInitialQTableValue(const JointState& state, const JointAction& jointAction) const;
   int N(const JointState& state, const JointAction& jointAction);
+  double Q(const JointState& state, const JointAction& jointAction);
 };
 
 double jointActionProbability(const JointPolicy& jointPolicy, const JointAction& jointAction);
