@@ -17,27 +17,23 @@
 #define DEFENDER_BASE_BREACH_REWARD -100
 #define DEFENDER_CAPTURE_PER_ATTACKER_BONUS 1
 
-namespace perimeter::environment {
+namespace perimeter::environment
+{
 
-struct StepResult {
-    std::vector<double> rewards;
-    std::vector<int> capturedAttackerIds;
-    std::vector<int> baseArrivalAttackerIds;
-    std::vector<int> respawnedAttackerIds;
+struct StepResult
+{
+  std::vector<double> rewards;
+  std::vector<int> capturedAttackerIds;
+  std::vector<int> baseArrivalAttackerIds;
+  std::vector<int> respawnedAttackerIds;
 };
 
 double captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept;
 bool isCaptureSuccessful(std::size_t defenderCount, double roll) noexcept;
 
-StepResult stepWorld(core::WorldState& world,
-                     const std::vector<Action>& jointActions,
-                     const geometry::Grid& grid,
-                     std::mt19937& rng);
+StepResult stepWorld(core::WorldState& world, const std::vector<Action>& jointActions,
+                     const geometry::Grid& grid, std::mt19937& rng);
 
-perimeter::JointReward computeDeterministicJointReward(const core::WorldState& world,
-                                                       const perimeter::JointAction& jointActions,
-                                                       const geometry::Grid& grid);
+} // namespace perimeter::environment
 
-}  // namespace perimeter::environment
-
-#endif  // PERIMETER_PERIMETER_ENVIRONMENT_TRANSITION_H
+#endif // PERIMETER_PERIMETER_ENVIRONMENT_TRANSITION_H

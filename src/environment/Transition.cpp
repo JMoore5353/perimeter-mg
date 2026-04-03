@@ -329,44 +329,4 @@ StepResult stepWorld(core::WorldState& world, const std::vector<Action>& jointAc
   return result;
 }
 
-perimeter::JointReward computeDeterministicJointReward(const core::WorldState& world,
-                                                       const perimeter::JointAction& jointActions,
-                                                       const geometry::Grid& grid)
-{
-  validateJointActions(world, jointActions);
-
-  // Create a copy of the world state to avoid modifying the original
-  core::WorldState worldCopy = world;
-
-  const IdToIndex idToIndex = buildIdToIndex(worldCopy);
-  RewardById rewardById = initializeRewardById(worldCopy);
-
-  // Apply deterministic movement (no stochastic deviations)
-  applyDeterministicMoves(worldCopy, jointActions, grid);
-  worldCopy.rebuildOccupancy();
-
-  // Apply defender movement penalty
-  applyDefenderMovementPenalty(worldCopy, jointActions, rewardById);
-
-  // Compute expected capture rewards (using probabilities)
-  applyExpectedCaptureRewards(worldCopy, idToIndex, rewardById);
-
-  // Apply base interactions (deterministic)
-  IdSet baseArrivalIds;
-  const std::unordered_set<geometry::Hex> baseSet = makeBaseSet(grid);
-  applyBaseInteractions(worldCopy, baseSet, rewardById, baseArrivalIds);
-  applyDefenderBaseBreachPenalty(worldCopy, baseArrivalIds, rewardById);
-
-  // Convert RewardById to JointReward vector ordered by agent index
-  perimeter::JointReward jointReward(worldCopy.agents.size(), 0.0);
-  for (const auto& entry : idToIndex) {
-    const auto found = rewardById.find(entry.first);
-    if (found != rewardById.end()) {
-      jointReward[entry.second] = found->second;
-    }
-  }
-
-  return jointReward;
-}
-
 } // namespace perimeter::environment

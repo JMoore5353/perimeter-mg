@@ -71,47 +71,5 @@ TEST(SimulatorTest, SteppingIsDeterministicForSameSeedAndInputs)
   }
 }
 
-TEST(SimulatorTest, GetRewardFunctionReturnsCallableFunction)
-{
-  const InitializationConfig config{
-    .radius = 3,
-    .attackerCount = 1,
-    .defenderCount = 1,
-    .seed = 42U,
-  };
-  InitializedEnvironment initialized = createInitialWorld(config);
-  Simulator simulator(std::move(initialized.grid), std::move(initialized.world), 17U);
-
-  auto rewardFunction = simulator.getRewardFunction();
-
-  const perimeter::JointAction jointAction{Action::STAY, Action::STAY};
-  const perimeter::JointReward rewards = rewardFunction(jointAction);
-
-  EXPECT_EQ(rewards.size(), simulator.world().agents.size());
-}
-
-TEST(SimulatorTest, GetRewardFunctionDoesNotModifySimulatorState)
-{
-  const InitializationConfig config{
-    .radius = 3,
-    .attackerCount = 1,
-    .defenderCount = 1,
-    .seed = 42U,
-  };
-  InitializedEnvironment initialized = createInitialWorld(config);
-  Simulator simulator(std::move(initialized.grid), std::move(initialized.world), 17U);
-
-  const geometry::Hex originalAttackerPos = simulator.world().agents[0].position;
-  const geometry::Hex originalDefenderPos = simulator.world().agents[1].position;
-
-  auto rewardFunction = simulator.getRewardFunction();
-  const perimeter::JointAction jointAction{Action::EAST, Action::WEST};
-  const perimeter::JointReward rewards = rewardFunction(jointAction);
-
-  // Verify state unchanged
-  EXPECT_EQ(simulator.world().agents[0].position, originalAttackerPos);
-  EXPECT_EQ(simulator.world().agents[1].position, originalDefenderPos);
-}
-
 } // namespace
 } // namespace perimeter::environment

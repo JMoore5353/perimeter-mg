@@ -218,10 +218,7 @@ public:
     }
   }
 
-  const std::vector<double>& getSolution() const
-  {
-    return solution_;
-  }
+  const std::vector<double>& getSolution() const { return solution_; }
 
 private:
   // Compute expected utility for agent i: U^i(π) = Σ_a R^i(a) Π_j π^j(a^j)

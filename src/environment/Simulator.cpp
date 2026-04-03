@@ -24,11 +24,4 @@ const geometry::Grid& Simulator::grid() const noexcept
   return grid_;
 }
 
-std::function<perimeter::JointReward(perimeter::JointAction)> Simulator::getRewardFunction() const
-{
-  return [this](const perimeter::JointAction& jointAction) -> perimeter::JointReward {
-    return computeDeterministicJointReward(world_, jointAction, grid_);
-  };
-}
-
 } // namespace perimeter::environment

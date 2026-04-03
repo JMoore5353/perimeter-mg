@@ -26,9 +26,6 @@ public:
   [[nodiscard]] const core::WorldState& world() const noexcept;
   [[nodiscard]] const geometry::Grid& grid() const noexcept;
 
-  [[nodiscard]] std::function<perimeter::JointReward(perimeter::JointAction)>
-  getRewardFunction() const;
-
 private:
   geometry::HexGrid grid_;
   core::WorldState world_;
