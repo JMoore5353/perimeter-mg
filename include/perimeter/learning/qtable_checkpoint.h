@@ -133,6 +133,19 @@ public:
   static std::string findLatestCheckpoint(const std::string& baseDir, int attackers, int defenders);
 
   /**
+   * Extract the training step number from a checkpoint filename/pattern.
+   *
+   * Expected suffix format: "_step<N>.bin", e.g.:
+   * - scenario_2a_1d_agent0_step10000.bin
+   * - scenario_2a_1d_agent*_step10000.bin
+   *
+   * @param filepath Checkpoint path or filename
+   * @return Parsed step number N
+   * @throws std::runtime_error if suffix does not match expected format
+   */
+  static int extractStepNumber(const std::string& filepath);
+
+  /**
    * Read checkpoint metadata without loading the full Q-table.
    *
    * Useful for inspecting checkpoint files or validating compatibility

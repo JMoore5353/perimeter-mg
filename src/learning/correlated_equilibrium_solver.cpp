@@ -4,12 +4,7 @@ JointPolicy CorrelatedEquilibriumSolver::solve(const JointRewardFunction& R,
                                                const JointActionSpace& jointActionSpace,
                                                const JointState& state)
 {
-  // TODO: Update the Python visualization
-  // TODO: QTable writer / parser doesn't store the checkpoint iteration, so it overwrites previous checkpoint data.
-  // In other words, when loading checkpoint 10000, it overwrites checkpoint 1000, and doesn't write checkpoint 11000.
-  // TODO: Change the Python viz to start at a particular step based on cli argument.
-
-  // TODO: Write this solve function using the HiGHS linear program solver. Use the following maximization equation
+  // Write this solve function using the HiGHS linear program solver. Use the following maximization equation
   // with the following constraints, reproduced here in LaTex:
   // \begin{equation}
   // \begin{split}

@@ -216,4 +216,22 @@ TEST_F(QTableCheckpointTest, EmptyQTable)
   EXPECT_EQ(loadedLearner.getQTable().size(), 0);
 }
 
+TEST_F(QTableCheckpointTest, ExtractStepNumberFromAgentFile)
+{
+  const std::string filepath = "qtables/scenario_2a_1d_agent0_step10000.bin";
+  EXPECT_EQ(QTableCheckpoint::extractStepNumber(filepath), 10000);
+}
+
+TEST_F(QTableCheckpointTest, ExtractStepNumberFromWildcardPattern)
+{
+  const std::string filepath = "qtables/scenario_2a_1d_agent*_step11000.bin";
+  EXPECT_EQ(QTableCheckpoint::extractStepNumber(filepath), 11000);
+}
+
+TEST_F(QTableCheckpointTest, ExtractStepNumberRejectsInvalidFilename)
+{
+  const std::string filepath = "qtables/scenario_2a_1d_agent0_latest.bin";
+  EXPECT_THROW(QTableCheckpoint::extractStepNumber(filepath), std::runtime_error);
+}
+
 }  // namespace perimeter::learning

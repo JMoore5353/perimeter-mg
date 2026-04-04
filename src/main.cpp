@@ -91,6 +91,7 @@ JointPolicy getRandomJointPolicy(std::mt19937& rng, const std::size_t numAgents)
 void runSim(const SimConfig& simConfig)
 {
   int t{0};
+  int checkpointStepOffset{0};
   std::ofstream outFile;
   outFile.open(simConfig.outputFile);
 
@@ -130,10 +131,14 @@ void runSim(const SimConfig& simConfig)
     try {
       std::cout << "Loading Q-tables from " << simConfig.loadCheckpoint << "..." << std::endl;
       learning::QTableCheckpoint::loadAll(qLearners, simConfig.loadCheckpoint);
+      checkpointStepOffset = learning::QTableCheckpoint::extractStepNumber(simConfig.loadCheckpoint);
+      std::cout << "Resuming checkpoint timeline from step " << checkpointStepOffset << "."
+                << std::endl;
       std::cout << "Successfully loaded checkpoint!" << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Warning: Failed to load checkpoint: " << e.what() << std::endl;
       std::cerr << "Starting with fresh Q-tables instead." << std::endl;
+      checkpointStepOffset = 0;
     }
   }
 
@@ -192,11 +197,16 @@ void runSim(const SimConfig& simConfig)
     }
 
     // Save checkpoint periodically
-    if (t > 0 && simConfig.saveInterval > 0 && t % simConfig.saveInterval == 0) {
+    int globalStep = checkpointStepOffset + t;
+    bool isCheckpointStep =
+      globalStep > checkpointStepOffset && simConfig.saveInterval > 0 &&
+      globalStep % simConfig.saveInterval == 0;
+    if (isCheckpointStep) {
       try {
         std::cout << outPrefix.str() << " Saving checkpoint..." << std::string(58, ' ')
                   << std::flush;
-        learning::QTableCheckpoint::saveAll(qLearners, config, gamma, t, simConfig.checkpointDir);
+        learning::QTableCheckpoint::saveAll(qLearners, config, gamma, globalStep,
+                                            simConfig.checkpointDir);
         std::cout << outPrefix.str() << " Checkpoint saved!" << std::string(58, ' ') << std::flush;
       } catch (const std::exception& e) {
         std::cerr << "\nWarning: Failed to save checkpoint: " << e.what() << std::endl;

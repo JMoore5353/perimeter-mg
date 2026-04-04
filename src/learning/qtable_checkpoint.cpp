@@ -607,6 +607,18 @@ std::string QTableCheckpoint::findLatestCheckpoint(const std::string& baseDir, i
   return latestFile;
 }
 
+int QTableCheckpoint::extractStepNumber(const std::string& filepath)
+{
+  std::filesystem::path path(filepath);
+  const std::string filename = path.filename().string();
+  std::smatch match;
+  const std::regex stepRegex(".*_step(\\d+)\\.bin$");
+  if (!std::regex_match(filename, match, stepRegex)) {
+    throw std::runtime_error("Failed to parse checkpoint step from filename: " + filename);
+  }
+  return std::stoi(match[1]);
+}
+
 // Read metadata only
 CheckpointMetadata QTableCheckpoint::readMetadata(const std::string& filepath)
 {
