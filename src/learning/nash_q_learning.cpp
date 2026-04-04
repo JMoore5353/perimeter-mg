@@ -22,7 +22,6 @@ const std::function<double(JointState, JointAction)> NashQLearning::getRewardFun
 
 void NashQLearning::setEquilibriumPolicy(const JointPolicy& newPolicy)
 {
-  // TODO: NEXT STEPS: Add unit tests to this qlearning module. (Ask AI? I'm not sure really the best way to test this)
   policy_ = newPolicy.at(id_);
 }
 

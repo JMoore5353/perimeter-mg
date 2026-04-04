@@ -40,6 +40,9 @@
 # debug information files
 *.dwo
 
+# Python
+__pycache__/
+
 classwork/
 build/
 sim.json
