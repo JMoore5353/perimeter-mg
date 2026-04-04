@@ -137,12 +137,33 @@ def set_scatter_offsets(
         scatter.set_offsets(np.empty((0, 2), dtype=float))
 
 
-def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
+def apply_step_accumulators(
+    agents: Sequence[Dict],
+    captured: Sequence[int],
+    arrivals: Sequence[int],
+    cumulative_rewards: Dict[int, float],
+) -> Tuple[int, int]:
+    """Update cumulative reward/event totals for a single record."""
+    for agent in agents:
+        agent_id = int(agent["id"])
+        cumulative_rewards[agent_id] += float(agent.get("reward", 0.0))
+    return len(captured), len(arrivals)
+
+
+def run_viewer(
+    steps: Sequence[Dict], start_step: int, hex_size: float, delay: float
+) -> None:
     world_tiles, base_tiles = extract_static_tiles(steps)
     if not world_tiles:
         raise ValueError("No world_tiles found in simulation log.")
     if not base_tiles:
         raise ValueError("No base_tiles found in simulation log.")
+    if start_step < 0:
+        raise ValueError("start_step must be >= 0.")
+    if start_step >= len(steps):
+        raise ValueError(
+            f"start_step {start_step} is out of range for {len(steps)} records."
+        )
 
     world_x, world_y = build_points(world_tiles, hex_size)
     base_x, base_y = build_points(base_tiles, hex_size)
@@ -241,7 +262,7 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     reward_lines = {}
     id_labels = []
     last_attacker_positions: Dict[int, Tuple[int, int]] = {}
-    for i, agent_id in enumerate(all_agent_ids):
+    for agent_id in all_agent_ids:
         (line,) = reward_ax.plot(
             [], [], label=f"id {agent_id}", color=agent_colors[agent_id], linewidth=2.0
         )
@@ -249,24 +270,11 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
     if all_agent_ids:
         reward_ax.legend(loc="upper left", ncol=2, fontsize=9)
 
-    for record in steps:
-        attackers_x: List[float] = []
-        attackers_y: List[float] = []
-        defenders_x: List[float] = []
-        defenders_y: List[float] = []
-        attacker_colors: List[Tuple[float, float, float, float]] = []
-        defender_colors: List[Tuple[float, float, float, float]] = []
-
-        for label in id_labels:
-            label.remove()
-        id_labels.clear()
-
+    for i, record in enumerate(steps):
         agents = record.get("agents", [])
         current_attacker_positions: Dict[int, Tuple[int, int]] = {}
-        grouped_agents: Dict[Tuple[int, int], List[Dict]] = {}
         for agent in agents:
             key = (int(agent["q"]), int(agent["r"]))
-            grouped_agents.setdefault(key, []).append(agent)
             if str(agent.get("type")) == "ATTACKER":
                 current_attacker_positions[int(agent["id"])] = key
 
@@ -288,6 +296,40 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
             previous_attacker_positions=last_attacker_positions,
             current_attacker_positions=current_attacker_positions,
         )
+        step_captures, step_arrivals = apply_step_accumulators(
+            agents=agents,
+            captured=captured,
+            arrivals=arrivals,
+            cumulative_rewards=cumulative_rewards,
+        )
+        cumulative_captures += step_captures
+        cumulative_base_arrivals += step_arrivals
+
+        step = int(record.get("step", -1))
+        step_history.append(step)
+        for agent_id in all_agent_ids:
+            reward_history[agent_id].append(cumulative_rewards[agent_id])
+            reward_lines[agent_id].set_data(step_history, reward_history[agent_id])
+
+        if i < start_step:
+            last_attacker_positions = dict(current_attacker_positions)
+            continue
+
+        attackers_x: List[float] = []
+        attackers_y: List[float] = []
+        defenders_x: List[float] = []
+        defenders_y: List[float] = []
+        attacker_colors: List[Tuple[float, float, float, float]] = []
+        defender_colors: List[Tuple[float, float, float, float]] = []
+        grouped_agents: Dict[Tuple[int, int], List[Dict]] = {}
+
+        for label in id_labels:
+            label.remove()
+        id_labels.clear()
+
+        for agent in agents:
+            key = (int(agent["q"]), int(agent["r"]))
+            grouped_agents.setdefault(key, []).append(agent)
 
         for (q, r), group in grouped_agents.items():
             center_x, center_y = hex_to_xy(q, r, hex_size)
@@ -344,22 +386,11 @@ def run_viewer(steps: Sequence[Dict], hex_size: float, delay: float) -> None:
         set_scatter_offsets(arrival_tile_overlay, arrival_tile_xy)
         set_scatter_offsets(capture_tile_overlay, capture_tile_xy)
 
-        cumulative_captures += len(captured)
-        cumulative_base_arrivals += len(arrivals)
         event_lines = [
             f"Captured attackers: {cumulative_captures}",
             f"Base arrivals: {cumulative_base_arrivals}",
         ]
         event_text.set_text("\n".join(event_lines))
-
-        step = int(record.get("step", -1))
-        step_history.append(step)
-        for agent in agents:
-            agent_id = int(agent["id"])
-            cumulative_rewards[agent_id] += float(agent.get("reward", 0.0))
-        for agent_id in all_agent_ids:
-            reward_history[agent_id].append(cumulative_rewards[agent_id])
-            reward_lines[agent_id].set_data(step_history, reward_history[agent_id])
 
         reward_ax.set_xlim(0, max(step_history[-1], 1))
         y_values = [value for history in reward_history.values() for value in history]
@@ -398,12 +429,17 @@ def main() -> None:
     parser.add_argument(
         "--hex-size", type=float, default=1.0, help="Hex size scaling (default: 1.0)"
     )
+    parser.add_argument(
+        "--start-step", type=int, default=0, help="Viz start step (default 0)"
+    )
     args = parser.parse_args()
 
     steps = load_steps(Path(args.input))
     if not steps:
         raise ValueError("No simulation records found in input.")
-    run_viewer(steps, hex_size=args.hex_size, delay=args.delay)
+    run_viewer(
+        steps, start_step=args.start_step, hex_size=args.hex_size, delay=args.delay
+    )
 
 
 if __name__ == "__main__":
