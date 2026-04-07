@@ -1,4 +1,4 @@
-# PerimeterMG
+<img width="2912" height="1440" alt="cover_img" src="https://github.com/user-attachments/assets/16b810d1-05aa-4f3e-a5aa-4b79443e5461" />
 
 This repo contains a C++ based simulation environment to run **PerimeterMG**, a border-protection Markov game.
 The scenario is based on the *predator-prey hex world* scenario from the *Algorithms for Decision Making* book by Kochenderfer, et al, and is a good environment to learn about game-theoretic approaches to decision problems.
@@ -35,7 +35,7 @@ Then, we'll run the Python visualizer that uses the output files.
 cd ~/path/to/cloned/perimeter-mg
 
 # Use --help to see all CLI options
-./build/perimeter_mg --steps 10000 --hex-radius 3 --num-attackers 1 --num-defenders 1
+./build/perimeter_mg --steps 500 --hex-radius 3 --num-attackers 1 --num-defenders 1
 ```
 
 Then, run
@@ -45,6 +45,32 @@ python3 scripts/visualize_sim.py --delay 0.1
 ```
 
 At this point, you will see the visualizer show up with the hex world and a reward plot.
+
+### Replicating results from this write-up
+To replicate the single attacker results, use
+```bash
+./build/perimeter_mg --steps 999 --hex-radius 3 --num-attackers 1 --num-defenders 0 --output 1a.json
+
+python3 scripts/visualize_sim.py --input 1a.json --delay 0.01
+```
+
+To replicate the single defender results, use
+```bash
+./build/perimeter_mg --steps 500 --hex-radius 3 --num-attackers 0 --num-defenders 1 --output 1d.json
+
+python3 scripts/visualize_sim.py --input 1d.json --delay 0.01
+```
+
+To replicate the 1 attacker/1 defender results, use
+```bash
+./build/perimeter_mg --steps 500 --hex-radius 3 --num-attackers 1 --num-defenders 1 --load-qtable "qtables/scenario_1a_1d_3r/scenario_1a_1d_agent*_step45000.bin" --output 1a_1d.json
+
+python3 scripts/visualize_sim.py --input 1a_1d.json --delay 0.1
+```
+
+> [!NOTE]
+> This last command loads a Q-table that was pre-trained trained on 45000 simulation steps.
+> The Q-tables are included in this repository in the `qtables` directory.
 
 ## Game description
 Two types of agents exit in PerimeterMG: attackers and defenders.
@@ -171,14 +197,41 @@ As shown in the below graphic, the defender quickly learns to stop moving on a h
 This makes sense since defenders get penalized for both moving and being located on a base tile.
 This validates the Nash Q-learning approach for the single defender case.
 
+https://github.com/user-attachments/assets/efeeae50-d69e-4eb9-a7de-25d46bab2c3e
 
 #### Single attacker case
-As shown in the below graphic, the single attacker quickly learns to move directly toward the goal tiles to maximize its reward.
+As shown in the below graphic, the single attacker begins by moving randomly in the environment.
+After a few hundred training steps, it learns to move directly toward the goal tiles to maximize its reward.
 Since the attacker is only rewarded for arriving at a base tile, this behavior makes sense.
 This validates the Nash Q-learning approach for the single attacker case.
 
+https://github.com/user-attachments/assets/b767d363-c99d-4704-be01-9b9055219631
 
 ### Multi-agent PerimeterMG
+#### 1 attacker, 1 defender
+The below image shows one attacker and one defender agents playing each other in simulation after about 25000 simulation steps.
+The attacker agent successfully learns to navigate toward the base tiles and tries to avoid the defender (steps 25150 to 25160).
+More training is needed to converge to an optimal policy, since there are times where the defender is far away, but the attacker appears to move randomly without advancing toward the goal.
+This is likely caused by insufficient exploration of these joint state spaces, resulting a random policy (according to the $\epsilon\text{-greedy}$ exploration strategy).
+
+https://github.com/user-attachments/assets/f7d02ea7-0ab8-41f9-8be5-334c6be8f87f
+
+The defender also learns sensible behavior.
+It limits its movement while (usually) staying close to the base station, and does not come to rest on the base tiles.
+When near the attacker, it chases the attacker, as in steps 25150-15160 and 25490-25500.
+Much more training is needed for the defender to come to a better policy, since it sometimes tends to wander off and stop moving near the edge of the map--a more sensible policy might result in the defender staying closer to the base tiles. 
+
+It is also interesting to note that occasionally, the attacker and defender get stuck in a gridlock.
+This is seen in the beginning and end of the video.
+Apparently, in these states, the Nash equilibrium results in a policy of both agents to not move.
+
+After a while, the agents eventually start moving again, maybe due to the reward function (based on the Q-table) converging to a different value, or a non-STAY action being drawn from the equilibrium policy.
+
+#### 1 attacker, 2 defenders
+
+
+#### 2 attackers, 3 defenders
+
 
 ### Curse of dimensionality
 One of the main challenges with this approach is computational complexity and the curse of dimensionality.
@@ -199,14 +252,16 @@ I do not do target training of for each state, so in reality many, many more sim
 
 ### Complexity of solving Nash equilibrium
 Solving a Nash equilibrium for a simple game is PPAD-complete, meaning there is no known polynomial time solution for solving for a Nash equilibrium.
-However, Nash Q-learning requires solving for a Nash equilibrium at every time step.
+Nash Q-learning requires solving for a simple game Nash equilibrium at every time step.
 
 This step is the bottleneck for my simulations.
-For just 2 agents, it takes on average 28ms to compute a Nash equilibrium on new-ish hardware.
+For just 2 agents, it takes on average 28ms to compute a Nash equilibrium, and scales poorly with the number of agents.
+
+<img width="800" height="600" alt="solve_times" src="https://github.com/user-attachments/assets/d6ae243d-9758-4eff-bd99-53879c55bf91" />
 
 ## AI Usage
 Generative AI was used extensively in this project to generate code.
-The simulation environment, simulation environment test cases, plotters, q-table checkpoint serializers, and the IPOPT solver were written using AI.
-I thoroughly reviewed **every line of AI-generated code**, with the exception of some of the serializer test cases.
+The simulation environment, simulation environment test cases, plotters, q-table checkpoint serializers, and the IPOPT simple game Nash solver were written using AI.
+I thoroughly reviewed every line of AI-generated code, with the exception of some of the serializer unit tests.
 
 I wrote everything else in the Nash Q-learning module (`learning/` directory) manually.

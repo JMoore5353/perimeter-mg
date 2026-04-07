@@ -1,0 +1,6 @@
+radius,total_agents,attackers,defenders,avg_solve_time_ms
+3,1,1,0,3.3
+3,1,0,1,3.0
+3,2,1,1,28.0
+3,4,1,3,152.92
+3,5,2,3,1384.55
