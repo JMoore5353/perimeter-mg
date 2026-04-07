@@ -1,15 +1,37 @@
 #!/usr/bin/env python3
-"""Visualize hex-world simulation logs from sim.json."""
+"""Visualize hex-world simulation logs from sim.json.
+
+This script can display simulations interactively or save them as MP4 videos.
+
+Usage:
+    # Interactive display (default)
+    python3 visualize_sim.py --input sim.json
+
+    # Save video with automatic filename (sim.json -> sim.mp4)
+    python3 visualize_sim.py --input sim.json --save-video
+
+    # Save video with custom filename
+    python3 visualize_sim.py --input sim.json --save-video --output my_animation.mp4
+
+    # Control playback speed with --delay (also affects video FPS)
+    python3 visualize_sim.py --input sim.json --save-video --delay 0.1
+
+Video requirements:
+    - Requires ffmpeg (preferred) or Pillow for video export
+    - Install ffmpeg: apt install ffmpeg (Linux) or brew install ffmpeg (Mac)
+"""
 
 import argparse
 import json
 import math
+import sys
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from matplotlib.collections import PathCollection
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
+import matplotlib.animation as animation
 import numpy as np
 
 
@@ -151,7 +173,13 @@ def apply_step_accumulators(
 
 
 def run_viewer(
-    steps: Sequence[Dict], start_step: int, hex_size: float, delay: float
+    steps: Sequence[Dict],
+    start_step: int,
+    stop_step: int,
+    hex_size: float,
+    delay: float,
+    save_video: bool = False,
+    output_file: Optional[str] = None,
 ) -> None:
     world_tiles, base_tiles = extract_static_tiles(steps)
     if not world_tiles:
@@ -164,6 +192,8 @@ def run_viewer(
         raise ValueError(
             f"start_step {start_step} is out of range for {len(steps)} records."
         )
+    if start_step > stop_step:
+        raise ValueError(f"start_step {stop_step} is before {start_step}.")
 
     world_x, world_y = build_points(world_tiles, hex_size)
     base_x, base_y = build_points(base_tiles, hex_size)
@@ -270,7 +300,21 @@ def run_viewer(
     if all_agent_ids:
         reward_ax.legend(loc="upper left", ncol=2, fontsize=9)
 
-    for i, record in enumerate(steps):
+    # State variables for animation update function
+    animation_state = {
+        "cumulative_rewards": cumulative_rewards,
+        "cumulative_captures": cumulative_captures,
+        "cumulative_base_arrivals": cumulative_base_arrivals,
+        "reward_history": reward_history,
+        "step_history": step_history,
+        "last_attacker_positions": last_attacker_positions,
+        "id_labels": id_labels,
+    }
+
+    def update_frame(frame_idx: int):
+        """Update function for animation frame."""
+        i = frame_idx
+        record = steps[i]
         agents = record.get("agents", [])
         current_attacker_positions: Dict[int, Tuple[int, int]] = {}
         for agent in agents:
@@ -287,50 +331,59 @@ def run_viewer(
         ]
         arrival_tiles = infer_arrival_tiles(
             arrivals,
-            previous_attacker_positions=last_attacker_positions,
+            previous_attacker_positions=animation_state["last_attacker_positions"],
             current_attacker_positions=current_attacker_positions,
             base_tiles=base_tiles,
         )
         capture_tiles = infer_capture_tiles(
             captured,
-            previous_attacker_positions=last_attacker_positions,
+            previous_attacker_positions=animation_state["last_attacker_positions"],
             current_attacker_positions=current_attacker_positions,
         )
         step_captures, step_arrivals = apply_step_accumulators(
             agents=agents,
             captured=captured,
             arrivals=arrivals,
-            cumulative_rewards=cumulative_rewards,
+            cumulative_rewards=animation_state["cumulative_rewards"],
         )
-        cumulative_captures += step_captures
-        cumulative_base_arrivals += step_arrivals
+        animation_state["cumulative_captures"] += step_captures
+        animation_state["cumulative_base_arrivals"] += step_arrivals
 
         if i < start_step - 500:
             # Save only the previous 500 time points to the reward history lines.
-            last_attacker_positions = dict(current_attacker_positions)
-            continue
+            animation_state["last_attacker_positions"] = dict(
+                current_attacker_positions
+            )
+            return []
 
         step = int(record.get("step", -1))
-        step_history.append(step)
+        animation_state["step_history"].append(step)
         for agent_id in all_agent_ids:
-            reward_history[agent_id].append(cumulative_rewards[agent_id])
-            reward_lines[agent_id].set_data(step_history, reward_history[agent_id])
+            animation_state["reward_history"][agent_id].append(
+                animation_state["cumulative_rewards"][agent_id]
+            )
+            reward_lines[agent_id].set_data(
+                animation_state["step_history"],
+                animation_state["reward_history"][agent_id],
+            )
 
         if i < start_step:
-            last_attacker_positions = dict(current_attacker_positions)
-            continue
+            animation_state["last_attacker_positions"] = dict(
+                current_attacker_positions
+            )
+            return []
 
         attackers_x: List[float] = []
         attackers_y: List[float] = []
         defenders_x: List[float] = []
         defenders_y: List[float] = []
-        attacker_colors: List[Tuple[float, float, float, float]] = []
-        defender_colors: List[Tuple[float, float, float, float]] = []
+        attacker_colors_list: List[Tuple[float, float, float, float]] = []
+        defender_colors_list: List[Tuple[float, float, float, float]] = []
         grouped_agents: Dict[Tuple[int, int], List[Dict]] = {}
 
-        for label in id_labels:
+        for label in animation_state["id_labels"]:
             label.remove()
-        id_labels.clear()
+        animation_state["id_labels"].clear()
 
         for agent in agents:
             key = (int(agent["q"]), int(agent["r"]))
@@ -355,13 +408,13 @@ def run_viewer(
                 if str(agent.get("type")) == "ATTACKER":
                     attackers_x.append(x)
                     attackers_y.append(y)
-                    attacker_colors.append(color)
+                    attacker_colors_list.append(color)
                 else:
                     defenders_x.append(x)
                     defenders_y.append(y)
-                    defender_colors.append(color)
+                    defender_colors_list.append(color)
 
-                id_labels.append(
+                animation_state["id_labels"].append(
                     ax.text(
                         x + 0.07 * hex_size,
                         y + 0.07 * hex_size,
@@ -380,11 +433,11 @@ def run_viewer(
                 )
 
         set_scatter_offsets(attacker_scatter, list(zip(attackers_x, attackers_y)))
-        if attacker_colors:
-            attacker_scatter.set_facecolors(attacker_colors)
+        if attacker_colors_list:
+            attacker_scatter.set_facecolors(attacker_colors_list)
         set_scatter_offsets(defender_scatter, list(zip(defenders_x, defenders_y)))
-        if defender_colors:
-            defender_scatter.set_facecolors(defender_colors)
+        if defender_colors_list:
+            defender_scatter.set_facecolors(defender_colors_list)
 
         arrival_tile_xy = [hex_to_xy(q, r, hex_size) for (q, r) in arrival_tiles]
         capture_tile_xy = [hex_to_xy(q, r, hex_size) for (q, r) in capture_tiles]
@@ -392,15 +445,25 @@ def run_viewer(
         set_scatter_offsets(capture_tile_overlay, capture_tile_xy)
 
         event_lines = [
-            f"Captured attackers: {cumulative_captures}",
-            f"Base arrivals: {cumulative_base_arrivals}",
+            f"Captured attackers: {animation_state['cumulative_captures']}",
+            f"Base arrivals: {animation_state['cumulative_base_arrivals']}",
         ]
         event_text.set_text("\n".join(event_lines))
 
-        if step_history:
-            x_step_start = step_history[-500] if len(step_history) > 500 else 0
-            reward_ax.set_xlim(x_step_start, max(step_history[-1], 1))
-        y_values = [value for history in reward_history.values() for value in history]
+        if animation_state["step_history"]:
+            x_step_start = (
+                animation_state["step_history"][-500]
+                if len(animation_state["step_history"]) > 500
+                else animation_state["step_history"][0]
+            )
+            reward_ax.set_xlim(
+                x_step_start, max(animation_state["step_history"][-1], 1)
+            )
+        y_values = [
+            value
+            for history in animation_state["reward_history"].values()
+            for value in history
+        ]
         if y_values:
             y_min = min(y_values)
             y_max = max(y_values)
@@ -410,12 +473,64 @@ def run_viewer(
         ax.set_title(
             f"Hex World Simulation - Step {step}", fontsize=14, fontweight="bold"
         )
-        fig.canvas.draw_idle()
-        plt.pause(delay)
-        last_attacker_positions = dict(current_attacker_positions)
+        animation_state["last_attacker_positions"] = dict(current_attacker_positions)
 
-    plt.ioff()
-    plt.show()
+        return [
+            attacker_scatter,
+            defender_scatter,
+            arrival_tile_overlay,
+            capture_tile_overlay,
+            event_text,
+            ax,
+            reward_ax,
+        ]
+
+    # Use FuncAnimation for both interactive and video modes
+    if save_video:
+        # Video saving mode
+        print(f"Creating animation with {len(steps)} frames...")
+        print(f"FPS: {1.0 / delay:.2f} (delay: {delay}s)")
+
+        # Check for available writers
+        writers = animation.writers.list()
+        if "ffmpeg" in writers:
+            Writer = animation.FFMpegWriter
+            writer_name = "ffmpeg"
+        elif "pillow" in writers:
+            Writer = animation.PillowWriter
+            writer_name = "pillow"
+            print("Warning: FFmpeg not found, using Pillow (may produce larger files)")
+        else:
+            raise RuntimeError(
+                "No video writer available. Please install ffmpeg: "
+                "apt install ffmpeg (Linux) or brew install ffmpeg (Mac)"
+            )
+
+        print(f"Using {writer_name} writer...")
+        writer = Writer(fps=1.0 / delay, metadata={"artist": "Perimeter-MG"})
+
+        anim = animation.FuncAnimation(
+            fig,
+            update_frame,
+            frames=range(start_step, stop_step + 1),
+            interval=delay * 1000,
+            blit=False,
+            repeat=True,
+        )
+
+        print(f"Saving video to {output_file}...")
+        anim.save(output_file, writer=writer)
+        print(f"Video saved successfully to {output_file}")
+        plt.close(fig)
+    else:
+        # Interactive display mode
+        for i in range(start_step, stop_step + 1):
+            update_frame(i)
+            fig.canvas.draw_idle()
+            plt.pause(delay)
+
+        plt.ioff()
+        plt.show()
 
 
 def main() -> None:
@@ -439,13 +554,43 @@ def main() -> None:
     parser.add_argument(
         "--start-step", type=int, default=0, help="Viz start step (default 0)"
     )
+    parser.add_argument(
+        "--stop-step", type=int, default=np.inf, help="Viz stop step (default inf)"
+    )
+    parser.add_argument(
+        "--save-video",
+        action="store_true",
+        help="Save animation as MP4 video instead of displaying interactively",
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output video filename (default: <input_stem>.mp4, e.g., sim.json -> sim.mp4)",
+    )
     args = parser.parse_args()
+
+    # Determine output filename if saving video
+    output_file = None
+    if args.save_video:
+        if args.output:
+            output_file = args.output
+        else:
+            # Default to input filename with .mp4 extension
+            input_path = Path(args.input)
+            output_file = str(input_path.parent / (input_path.stem + ".mp4"))
 
     steps = load_steps(Path(args.input))
     if not steps:
         raise ValueError("No simulation records found in input.")
+    args.stop_step = min(len(steps) - 1, args.stop_step)
     run_viewer(
-        steps, start_step=args.start_step, hex_size=args.hex_size, delay=args.delay
+        steps,
+        start_step=args.start_step,
+        stop_step=args.stop_step,
+        hex_size=args.hex_size,
+        delay=args.delay,
+        save_video=args.save_video,
+        output_file=output_file,
     )
 
 
