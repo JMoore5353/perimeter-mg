@@ -305,6 +305,11 @@ def run_viewer(
         cumulative_captures += step_captures
         cumulative_base_arrivals += step_arrivals
 
+        if i < start_step - 500:
+            # Save only the previous 500 time points to the reward history lines.
+            last_attacker_positions = dict(current_attacker_positions)
+            continue
+
         step = int(record.get("step", -1))
         step_history.append(step)
         for agent_id in all_agent_ids:
@@ -392,7 +397,9 @@ def run_viewer(
         ]
         event_text.set_text("\n".join(event_lines))
 
-        reward_ax.set_xlim(0, max(step_history[-1], 1))
+        if step_history:
+            x_step_start = step_history[-500] if len(step_history) > 500 else 0
+            reward_ax.set_xlim(x_step_start, max(step_history[-1], 1))
         y_values = [value for history in reward_history.values() for value in history]
         if y_values:
             y_min = min(y_values)

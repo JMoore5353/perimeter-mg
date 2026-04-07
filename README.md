@@ -161,6 +161,26 @@ Instead, I will use the Nash Q-learning algorithm presented in the book, where a
 In hindsight, it would have been interesting to compute the Nash equilibrium using nonlinear programming and compare runtime and solutions to the Nash Q-learning approach.
 While in theory the linear programs solved inside of the Nash Q-learning approach can be solved in polynomial time, I have to solve one at each simulation step, where the nonlinear program would only have to be run one time.
 
+## Results and discussion
+### Curse of dimensionality
+One of the main challenges with this approach is computational complexity and the curse of dimensionality.
+Nash Q-learning relies on a Q-table, which tabulates the value of state-action pairs.
+In the single agent case, there are $O(|S||A|)$ of these state-action pairs.
+In the multi-agent case, these are **joint** state and **joint** action pairs, so now $S= S^0 \times S^1 \times \dots \times S^n$ and $A=A^0 \times A^1 \times \dots \times A^n$.
+
+Thus, for PerimeterMG on a hex world grid of radius 3, there are 37 states that each agent can occupy, and 7 actions, resulting in $|S|=37^n$ and $|A|=7^n$.
+For even just 3 agents, the Q-table is a $37^3$ by $7^3$ matrix, having 17373979 entries.
+
+To reach convergence for the entire Q-table, I would have to run well over 17 million simulation steps just for the 3-agent case.
+
+### Complexity of solving Nash equilibrium
+Solving a Nash equilibrium for a simple game is PPAD-complete, meaning there is no known polynomial time solution for solving for a Nash equilibrium.
+However, Nash Q-learning requires solving for a Nash equilibrium at every time step.
+
+This step is the bottleneck for my simulations.
+For just 2 agents, it takes on average 28ms to compute a Nash equilibrium on new-ish hardware.
+
+
 ## AI Usage
 Generative AI was used extensively in this project to generate code.
 The simulation environment, simulation environment test cases, plotters, q-table checkpoint serializers, and the IPOPT solver were written using AI.

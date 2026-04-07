@@ -46,4 +46,5 @@ __pycache__/
 classwork/
 build/
 sim.json
+results/
 qtables/
