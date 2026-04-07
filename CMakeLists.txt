@@ -16,6 +16,10 @@ message(STATUS "Found Ipopt include: ${IPOPT_INCLUDE_DIR}")
 find_package(ZLIB REQUIRED)
 message(STATUS "Found ZLIB: ${ZLIB_LIBRARIES}")
 
+# Threads for parallel checkpoint saving
+find_package(Threads REQUIRED)
+message(STATUS "Found Threads: ${CMAKE_THREAD_LIBS_INIT}")
+
 add_library(perimeter_geometry
     src/geometry/Hex.cpp
     src/geometry/HexGrid.cpp
@@ -36,6 +40,7 @@ target_link_libraries(perimeter_geometry
     PUBLIC
         ${IPOPT_LIBRARY}
         ZLIB::ZLIB
+        Threads::Threads
 )
 target_include_directories(perimeter_geometry
     PUBLIC

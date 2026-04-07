@@ -234,4 +234,54 @@ TEST_F(QTableCheckpointTest, ExtractStepNumberRejectsInvalidFilename)
   EXPECT_THROW(QTableCheckpoint::extractStepNumber(filepath), std::runtime_error);
 }
 
+TEST_F(QTableCheckpointTest, ParallelSaveAll)
+{
+  // Create multiple agents with some Q-table data
+  int numAgents = 3;
+  double gamma = 0.95;
+  JointActionSpace actionSpace(numAgents);
+
+  std::vector<NashQLearning> learners;
+  for (int i = 0; i < numAgents; ++i) {
+    AgentType type = (i == 0) ? AgentType::ATTACKER : AgentType::DEFENDER;
+    learners.emplace_back(i, numAgents, gamma, actionSpace, type);
+
+    // Add some Q-table entries
+    JointState state = {AgentState{0, AgentType::ATTACKER, Hex{0, 0}},
+                        AgentState{1, AgentType::DEFENDER, Hex{1, 1}},
+                        AgentState{2, AgentType::DEFENDER, Hex{-1, -1}}};
+    JointAction action = {Action::EAST, Action::STAY, Action::WEST};
+    
+    auto& qTable = const_cast<QTable&>(learners[i].getQTable());
+    qTable[state][action] = 10.5;
+  }
+
+  // Save all agents in parallel
+  environment::InitializationConfig config{5, 1, 2, 12345};
+  int stepNumber = 1000;
+
+  EXPECT_NO_THROW(QTableCheckpoint::saveAll(learners, config, gamma, stepNumber, testDir_));
+
+  // Verify all files were created
+  for (int i = 0; i < numAgents; ++i) {
+    std::string expectedFile = testDir_ + "/scenario_1a_2d_agent" + std::to_string(i) + "_step1000.bin";
+    EXPECT_TRUE(std::filesystem::exists(expectedFile)) << "File not found: " << expectedFile;
+  }
+
+  // Load and verify data
+  std::vector<NashQLearning> loadedLearners;
+  for (int i = 0; i < numAgents; ++i) {
+    AgentType type = (i == 0) ? AgentType::ATTACKER : AgentType::DEFENDER;
+    loadedLearners.emplace_back(i, numAgents, gamma, actionSpace, type);
+  }
+
+  std::string pattern = testDir_ + "/scenario_1a_2d_agent*_step1000.bin";
+  EXPECT_NO_THROW(QTableCheckpoint::loadAll(loadedLearners, pattern));
+
+  // Verify loaded Q-tables
+  for (int i = 0; i < numAgents; ++i) {
+    EXPECT_EQ(loadedLearners[i].getQTable().size(), 1);
+  }
+}
+
 }  // namespace perimeter::learning

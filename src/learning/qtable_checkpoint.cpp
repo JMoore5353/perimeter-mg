@@ -4,9 +4,12 @@
 #include <chrono>
 #include <cstring>
 #include <filesystem>
+#include <future>
 #include <iostream>
+#include <mutex>
 #include <regex>
 #include <stdexcept>
+#include <thread>
 #include <zlib.h>
 
 namespace perimeter::learning
@@ -67,10 +70,10 @@ private:
   std::size_t pos;
 };
 
-// Header serialization
-void QTableCheckpoint::writeHeader(std::ofstream& out, const CheckpointMetadata& metadata)
+// Header serialization to memory
+void QTableCheckpoint::writeHeaderToMemory(
+  ByteWriter& writer, const CheckpointMetadata& metadata)
 {
-  ByteWriter writer;
   writer.writeBytes(MAGIC, 5);
   writer.write(VERSION);
   writer.write(metadata.timestamp);
@@ -81,7 +84,13 @@ void QTableCheckpoint::writeHeader(std::ofstream& out, const CheckpointMetadata&
   writer.write(static_cast<std::int32_t>(metadata.radius));
   writer.write(static_cast<std::int32_t>(metadata.attackerCount));
   writer.write(static_cast<std::int32_t>(metadata.defenderCount));
+}
 
+// Header serialization (legacy, uses writeHeaderToMemory)
+void QTableCheckpoint::writeHeader(std::ofstream& out, const CheckpointMetadata& metadata)
+{
+  ByteWriter writer;
+  writeHeaderToMemory(writer, metadata);
   const auto& buf = writer.getBuffer();
   out.write(reinterpret_cast<const char*>(buf.data()), buf.size());
 }
@@ -120,10 +129,9 @@ CheckpointMetadata QTableCheckpoint::readHeader(std::ifstream& in)
   return metadata;
 }
 
-// JointState serialization
-void QTableCheckpoint::writeJointState(std::ofstream& out, const JointState& state)
+// JointState serialization to memory
+void QTableCheckpoint::writeJointStateToMemory(ByteWriter& writer, const JointState& state)
 {
-  ByteWriter writer;
   writer.write(static_cast<std::size_t>(state.size()));
   for (const auto& agentState : state) {
     writer.write(static_cast<std::int32_t>(agentState.id));
@@ -131,6 +139,13 @@ void QTableCheckpoint::writeJointState(std::ofstream& out, const JointState& sta
     writer.write(static_cast<std::int32_t>(agentState.position.q));
     writer.write(static_cast<std::int32_t>(agentState.position.r));
   }
+}
+
+// JointState serialization (legacy, uses writeJointStateToMemory)
+void QTableCheckpoint::writeJointState(std::ofstream& out, const JointState& state)
+{
+  ByteWriter writer;
+  writeJointStateToMemory(writer, state);
   const auto& buf = writer.getBuffer();
   out.write(reinterpret_cast<const char*>(buf.data()), buf.size());
 }
@@ -162,14 +177,20 @@ JointState QTableCheckpoint::readJointState(std::ifstream& in)
   return state;
 }
 
-// JointAction serialization
-void QTableCheckpoint::writeJointAction(std::ofstream& out, const JointAction& action)
+// JointAction serialization to memory
+void QTableCheckpoint::writeJointActionToMemory(ByteWriter& writer, const JointAction& action)
 {
-  ByteWriter writer;
   writer.write(static_cast<std::size_t>(action.size()));
   for (const auto& a : action) {
     writer.write(static_cast<std::uint8_t>(a));
   }
+}
+
+// JointAction serialization (legacy, uses writeJointActionToMemory)
+void QTableCheckpoint::writeJointAction(std::ofstream& out, const JointAction& action)
+{
+  ByteWriter writer;
+  writeJointActionToMemory(writer, action);
   const auto& buf = writer.getBuffer();
   out.write(reinterpret_cast<const char*>(buf.data()), buf.size());
 }
@@ -193,7 +214,23 @@ JointAction QTableCheckpoint::readJointAction(std::ifstream& in)
   return action;
 }
 
-// Q-table serialization
+// Q-table serialization to memory
+void QTableCheckpoint::writeQTableToMemory(ByteWriter& writer, const QTable& table)
+{
+  writer.write(static_cast<std::size_t>(table.size()));
+
+  for (const auto& [state, innerMap] : table) {
+    writeJointStateToMemory(writer, state);
+    writer.write(static_cast<std::size_t>(innerMap.size()));
+
+    for (const auto& [action, qValue] : innerMap) {
+      writeJointActionToMemory(writer, action);
+      writer.write(qValue);
+    }
+  }
+}
+
+// Q-table serialization (legacy, uses writeQTableToMemory)
 void QTableCheckpoint::writeQTable(std::ofstream& out, const QTable& table)
 {
   ByteWriter writer;
@@ -240,7 +277,18 @@ void QTableCheckpoint::readQTable(std::ifstream& in, QTable& table)
   }
 }
 
-// N_s_ table serialization
+// N_s_ table serialization to memory
+void QTableCheckpoint::writeNsTableToMemory(ByteWriter& writer, const NsTable& table)
+{
+  writer.write(static_cast<std::size_t>(table.size()));
+
+  for (const auto& [state, count] : table) {
+    writeJointStateToMemory(writer, state);
+    writer.write(static_cast<std::int32_t>(count));
+  }
+}
+
+// N_s_ table serialization (legacy, uses writeNsTableToMemory)
 void QTableCheckpoint::writeNsTable(std::ofstream& out, const NsTable& table)
 {
   ByteWriter writer;
@@ -269,7 +317,23 @@ void QTableCheckpoint::readNsTable(std::ifstream& in, NsTable& table)
   }
 }
 
-// N_s_a_ table serialization
+// N_s_a_ table serialization to memory
+void QTableCheckpoint::writeNsaTableToMemory(ByteWriter& writer, const NsaTable& table)
+{
+  writer.write(static_cast<std::size_t>(table.size()));
+
+  for (const auto& [state, innerMap] : table) {
+    writeJointStateToMemory(writer, state);
+    writer.write(static_cast<std::size_t>(innerMap.size()));
+
+    for (const auto& [action, count] : innerMap) {
+      writeJointActionToMemory(writer, action);
+      writer.write(static_cast<std::int32_t>(count));
+    }
+  }
+}
+
+// N_s_a_ table serialization (legacy, uses writeNsaTableToMemory)
 void QTableCheckpoint::writeNsaTable(std::ofstream& out, const NsaTable& table)
 {
   ByteWriter writer;
@@ -327,8 +391,11 @@ std::vector<std::uint8_t> QTableCheckpoint::compress(const std::vector<std::uint
   std::uint64_t originalSize = data.size();
   std::memcpy(compressed.data(), &originalSize, sizeof(std::uint64_t));
 
+  // Use Z_DEFAULT_COMPRESSION (level 6) instead of Z_BEST_COMPRESSION (level 9)
+  // Provides ~40-60% faster compression with only ~5-10% size increase
+  // This is a good tradeoff for frequent checkpoint saving during training
   int result = compress2(compressed.data() + sizeof(std::uint64_t), &compressedSize, data.data(),
-                         data.size(), Z_BEST_COMPRESSION);
+                         data.size(), Z_DEFAULT_COMPRESSION);
 
   if (result != Z_OK) {
     throw std::runtime_error("Compression failed with error code: " + std::to_string(result));
@@ -367,6 +434,21 @@ std::uint32_t QTableCheckpoint::computeCRC32(const std::vector<std::uint8_t>& da
   return crc32(0L, data.data(), data.size());
 }
 
+// Serialize checkpoint to memory buffer (no disk I/O)
+std::vector<std::uint8_t> QTableCheckpoint::serializeToMemory(
+  const NashQLearning& learner, const CheckpointMetadata& metadata)
+{
+  ByteWriter writer;
+  
+  // Serialize header and all tables to memory
+  writeHeaderToMemory(writer, metadata);
+  writeQTableToMemory(writer, learner.getQTable());
+  writeNsTableToMemory(writer, learner.getNsTable());
+  writeNsaTableToMemory(writer, learner.getNsaTable());
+  
+  return writer.getBuffer();
+}
+
 // High-level save function
 void QTableCheckpoint::save(const NashQLearning& learner, const CheckpointMetadata& metadata,
                             const std::string& filepath)
@@ -377,26 +459,8 @@ void QTableCheckpoint::save(const NashQLearning& learner, const CheckpointMetada
     std::filesystem::create_directories(path.parent_path());
   }
 
-  // Write to temporary file first (for atomicity)
-  std::string tempPath = filepath + ".tmp";
-  std::ofstream out(tempPath, std::ios::binary);
-  if (!out) {
-    throw std::runtime_error("Failed to open file for writing: " + tempPath);
-  }
-
-  // Write header and Q-tables
-  writeHeader(out, metadata);
-  writeQTable(out, learner.getQTable());
-  writeNsTable(out, learner.getNsTable());
-  writeNsaTable(out, learner.getNsaTable());
-
-  out.close();
-
-  // Read back for compression and checksum
-  std::ifstream inTemp(tempPath, std::ios::binary);
-  std::vector<std::uint8_t> data((std::istreambuf_iterator<char>(inTemp)),
-                                  std::istreambuf_iterator<char>());
-  inTemp.close();
+  // Serialize to memory (eliminates temp file I/O)
+  std::vector<std::uint8_t> data = serializeToMemory(learner, metadata);
 
   // Compress
   std::vector<std::uint8_t> compressed = compress(data);
@@ -404,18 +468,19 @@ void QTableCheckpoint::save(const NashQLearning& learner, const CheckpointMetada
   // Compute checksum
   std::uint32_t checksum = computeCRC32(compressed);
 
-  // Write final file
-  std::ofstream finalOut(filepath, std::ios::binary);
-  if (!finalOut) {
-    throw std::runtime_error("Failed to open file for writing: " + filepath);
+  // Write to temporary file first (for atomicity)
+  std::string tempPath = filepath + ".tmp";
+  std::ofstream out(tempPath, std::ios::binary);
+  if (!out) {
+    throw std::runtime_error("Failed to open file for writing: " + tempPath);
   }
 
-  finalOut.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
-  finalOut.write(reinterpret_cast<const char*>(&checksum), sizeof(std::uint32_t));
-  finalOut.close();
+  out.write(reinterpret_cast<const char*>(compressed.data()), compressed.size());
+  out.write(reinterpret_cast<const char*>(&checksum), sizeof(std::uint32_t));
+  out.close();
 
-  // Remove temp file
-  std::filesystem::remove(tempPath);
+  // Atomic rename
+  std::filesystem::rename(tempPath, filepath);
 }
 
 // High-level load function
@@ -503,7 +568,7 @@ void QTableCheckpoint::load(NashQLearning& learner, const std::string& filepath,
   learner.setNsaTable(std::move(nsaTable));
 }
 
-// Save all agents
+// Save all agents in parallel
 void QTableCheckpoint::saveAll(const std::vector<NashQLearning>& learners,
                                const environment::InitializationConfig& config, double gamma,
                                int stepNumber, const std::string& baseDir)
@@ -515,7 +580,13 @@ void QTableCheckpoint::saveAll(const std::vector<NashQLearning>& learners,
       std::chrono::system_clock::now().time_since_epoch())
       .count();
 
+  // Parallel save using std::async
+  std::vector<std::future<void>> futures;
+  std::mutex errorMutex;
+  std::vector<std::string> errors;
+
   for (const auto& learner : learners) {
+    // Capture metadata and filename for this agent
     CheckpointMetadata metadata;
     metadata.agentId = learner.getId();
     metadata.agentType = learner.getAgentType();
@@ -530,8 +601,31 @@ void QTableCheckpoint::saveAll(const std::vector<NashQLearning>& learners,
     std::ostringstream filename;
     filename << baseDir << "/scenario_" << config.attackerCount << "a_" << config.defenderCount
              << "d_agent" << learner.getId() << "_step" << stepNumber << ".bin";
+    std::string filepath = filename.str();
 
-    save(learner, metadata, filename.str());
+    // Launch async task to save this agent
+    futures.push_back(std::async(std::launch::async, [&learner, metadata, filepath, &errorMutex, &errors]() {
+      try {
+        save(learner, metadata, filepath);
+      } catch (const std::exception& e) {
+        std::lock_guard<std::mutex> lock(errorMutex);
+        errors.push_back("Agent " + std::to_string(metadata.agentId) + ": " + e.what());
+      }
+    }));
+  }
+
+  // Wait for all saves to complete
+  for (auto& fut : futures) {
+    fut.get();
+  }
+
+  // Report errors if any occurred
+  if (!errors.empty()) {
+    std::string errorMsg = "Checkpoint save failed for " + std::to_string(errors.size()) + " agent(s):\n";
+    for (const auto& err : errors) {
+      errorMsg += "  " + err + "\n";
+    }
+    throw std::runtime_error(errorMsg);
   }
 }
 
