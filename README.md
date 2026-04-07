@@ -162,6 +162,24 @@ In hindsight, it would have been interesting to compute the Nash equilibrium usi
 While in theory the linear programs solved inside of the Nash Q-learning approach can be solved in polynomial time, I have to solve one at each simulation step, where the nonlinear program would only have to be run one time.
 
 ## Results and discussion
+### Validation of Nash Q-learning approach
+To validate that the Q-learning approach resulted in expected behavior, I ran two PerimeterMG experiments, one with a single attacker and another with a single defender.
+In the single agent case, the Markov game reduces to a Markov Decision Problem, and agents should learn to maximize their reward.
+
+#### Single defender case
+As shown in the below graphic, the defender quickly learns to stop moving on a hex tile that is not a base tile.
+This makes sense since defenders get penalized for both moving and being located on a base tile.
+This validates the Nash Q-learning approach for the single defender case.
+
+
+#### Single attacker case
+As shown in the below graphic, the single attacker quickly learns to move directly toward the goal tiles to maximize its reward.
+Since the attacker is only rewarded for arriving at a base tile, this behavior makes sense.
+This validates the Nash Q-learning approach for the single attacker case.
+
+
+### Multi-agent PerimeterMG
+
 ### Curse of dimensionality
 One of the main challenges with this approach is computational complexity and the curse of dimensionality.
 Nash Q-learning relies on a Q-table, which tabulates the value of state-action pairs.
@@ -169,9 +187,15 @@ In the single agent case, there are $O(|S||A|)$ of these state-action pairs.
 In the multi-agent case, these are **joint** state and **joint** action pairs, so now $S= S^0 \times S^1 \times \dots \times S^n$ and $A=A^0 \times A^1 \times \dots \times A^n$.
 
 Thus, for PerimeterMG on a hex world grid of radius 3, there are 37 states that each agent can occupy, and 7 actions, resulting in $|S|=37^n$ and $|A|=7^n$.
-For even just 3 agents, the Q-table is a $37^3$ by $7^3$ matrix, having 17373979 entries.
+For even just 3 agents, each agent's Q-table is a $37^3$ by $7^3$ matrix, having 17373979 entries.
 
-To reach convergence for the entire Q-table, I would have to run well over 17 million simulation steps just for the 3-agent case.
+To reach convergence for the entire Q-table, I would have to run many simulation steps for each of the more than 17 million Q-table entries--just for the 3-agent case.
+
+Since agents in my implementation of Nash Q-learning follow an $\epsilon\text{-greedy}$ policy, they choose a random action at a joint state with probability $\epsilon$, where $\epsilon$ is inversely proportional to the number of times that joint state has been visited.
+Thus, as the number of agents and available hex grids increase, the number of training steps required to converge to a non-random policy increases dramatically.
+
+In other words, in the previous Q-table example, to reduce the probability $\epsilon$ of choosing a random action at a given state to just 33%, then each joint state would be need to be visited 3 times, resulting in 151959 simulation steps.
+I do not do target training of for each state, so in reality many, many more simulation steps would be required.
 
 ### Complexity of solving Nash equilibrium
 Solving a Nash equilibrium for a simple game is PPAD-complete, meaning there is no known polynomial time solution for solving for a Nash equilibrium.
@@ -179,7 +203,6 @@ However, Nash Q-learning requires solving for a Nash equilibrium at every time s
 
 This step is the bottleneck for my simulations.
 For just 2 agents, it takes on average 28ms to compute a Nash equilibrium on new-ish hardware.
-
 
 ## AI Usage
 Generative AI was used extensively in this project to generate code.
