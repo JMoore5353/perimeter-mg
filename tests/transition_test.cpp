@@ -18,11 +18,11 @@ namespace
 
 TEST(TransitionTest, CaptureProbabilityMatchesSpec)
 {
-  EXPECT_DOUBLE_EQ(captureProbabilityForDefenderCount(0), 0.0);
-  EXPECT_DOUBLE_EQ(captureProbabilityForDefenderCount(1), 0.7);
-  EXPECT_DOUBLE_EQ(captureProbabilityForDefenderCount(2), 0.99);
-  EXPECT_DOUBLE_EQ(captureProbabilityForDefenderCount(3), 0.0);
-  EXPECT_DOUBLE_EQ(captureProbabilityForDefenderCount(5), 0.0);
+  EXPECT_FLOAT_EQ(captureProbabilityForDefenderCount(0), 0.0);
+  EXPECT_FLOAT_EQ(captureProbabilityForDefenderCount(1), 0.7);
+  EXPECT_FLOAT_EQ(captureProbabilityForDefenderCount(2), 0.99);
+  EXPECT_FLOAT_EQ(captureProbabilityForDefenderCount(3), 0.0);
+  EXPECT_FLOAT_EQ(captureProbabilityForDefenderCount(5), 0.0);
 }
 
 TEST(TransitionTest, CaptureSuccessUsesStrictRollComparison)
@@ -65,7 +65,7 @@ TEST(TransitionTest, AttackerOnBaseGetsRewardAndIsRespawnedToOuterRing)
   const StepResult result = stepWorld(world, actions, grid, rng);
 
   ASSERT_EQ(result.rewards.size(), 1U);
-  EXPECT_DOUBLE_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
   EXPECT_EQ(result.baseArrivalAttackerIds.size(), 1U);
   EXPECT_EQ(result.baseArrivalAttackerIds[0], 100);
   EXPECT_EQ(result.respawnedAttackerIds.size(), 1U);
@@ -90,7 +90,7 @@ TEST(TransitionTest, DefenderOnBaseGetsPenalty)
   const StepResult result = stepWorld(world, actions, grid, rng);
 
   ASSERT_EQ(result.rewards.size(), 1U);
-  EXPECT_DOUBLE_EQ(result.rewards[0], DEFENDER_BASE_ARRIVAL_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[0], DEFENDER_BASE_ARRIVAL_REWARD);
   EXPECT_TRUE(result.baseArrivalAttackerIds.empty());
   EXPECT_TRUE(result.capturedAttackerIds.empty());
 }
@@ -118,10 +118,10 @@ TEST(TransitionTest, ThreeDefendersPreventCapture)
   const StepResult result = stepWorld(world, actions, grid, rng);
 
   ASSERT_EQ(result.rewards.size(), 4U);
-  EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
-  EXPECT_DOUBLE_EQ(result.rewards[1], 0.0);
-  EXPECT_DOUBLE_EQ(result.rewards[2], 0.0);
-  EXPECT_DOUBLE_EQ(result.rewards[3], 0.0);
+  EXPECT_FLOAT_EQ(result.rewards[0], 0.0);
+  EXPECT_FLOAT_EQ(result.rewards[1], 0.0);
+  EXPECT_FLOAT_EQ(result.rewards[2], 0.0);
+  EXPECT_FLOAT_EQ(result.rewards[3], 0.0);
   EXPECT_TRUE(result.capturedAttackerIds.empty());
   EXPECT_TRUE(result.respawnedAttackerIds.empty());
   EXPECT_EQ(world.agents[0].position, (geometry::Hex{1, -1}));
@@ -144,9 +144,9 @@ TEST(TransitionTest, BaseBreachPenalizesAllDefenders)
   const StepResult result = stepWorld(world, actions, grid, rng);
 
   ASSERT_EQ(result.rewards.size(), 3U);
-  EXPECT_DOUBLE_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
-  EXPECT_DOUBLE_EQ(result.rewards[1], DEFENDER_BASE_BREACH_REWARD);
-  EXPECT_DOUBLE_EQ(result.rewards[2], DEFENDER_BASE_BREACH_REWARD + DEFENDER_BASE_ARRIVAL_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[0], ATTACKER_BASE_ARRIVAL_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[1], DEFENDER_BASE_BREACH_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[2], DEFENDER_BASE_BREACH_REWARD + DEFENDER_BASE_ARRIVAL_REWARD);
 }
 
 TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender)
@@ -170,12 +170,12 @@ TEST(TransitionTest, CaptureRewardIsSharedAsMOverNPerDefender)
   };
 
   const StepResult result = stepWorld(world, actions, grid, rng);
-  const double captured = static_cast<double>(result.capturedAttackerIds.size());
-  const double expectedPerDefender = (DEFENDER_CAPTURE_PER_ATTACKER_BONUS * captured / 2.0);
+  const float captured = static_cast<float>(result.capturedAttackerIds.size());
+  const float expectedPerDefender = (DEFENDER_CAPTURE_PER_ATTACKER_BONUS * captured / 2.0);
 
   ASSERT_EQ(result.rewards.size(), 4U);
-  EXPECT_DOUBLE_EQ(result.rewards[2], expectedPerDefender);
-  EXPECT_DOUBLE_EQ(result.rewards[3], expectedPerDefender);
+  EXPECT_FLOAT_EQ(result.rewards[2], expectedPerDefender);
+  EXPECT_FLOAT_EQ(result.rewards[3], expectedPerDefender);
 }
 
 TEST(TransitionTest, DefenderMovementPenaltyAppliesOnlyWhenNotStaying)
@@ -194,8 +194,8 @@ TEST(TransitionTest, DefenderMovementPenaltyAppliesOnlyWhenNotStaying)
   const StepResult result = stepWorld(world, actions, grid, rng);
 
   ASSERT_EQ(result.rewards.size(), 2U);
-  EXPECT_DOUBLE_EQ(result.rewards[0], 0.0);
-  EXPECT_DOUBLE_EQ(result.rewards[1], DEFENDER_MOVEMENT_REWARD);
+  EXPECT_FLOAT_EQ(result.rewards[0], 0.0);
+  EXPECT_FLOAT_EQ(result.rewards[1], DEFENDER_MOVEMENT_REWARD);
 }
 
 TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesSingleDefenderCase)
@@ -220,7 +220,7 @@ TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesSingleDefenderCase)
     }
   }
 
-  const double rate = static_cast<double>(captures) / static_cast<double>(kTrials);
+  const float rate = static_cast<float>(captures) / static_cast<float>(kTrials);
   EXPECT_NEAR(rate, 0.7, 0.05);
 }
 
@@ -247,7 +247,7 @@ TEST(TransitionTest, CaptureProbabilityEmpiricallyMatchesTwoDefenderCase)
     }
   }
 
-  const double rate = static_cast<double>(captures) / static_cast<double>(kTrials);
+  const float rate = static_cast<float>(captures) / static_cast<float>(kTrials);
   EXPECT_NEAR(rate, 0.99, 0.02);
 }
 
@@ -284,7 +284,7 @@ TEST(TransitionTest, RespawnSamplingCoversOuterRingReasonablyEvenly)
   }
 
   EXPECT_GT(minCount, 0);
-  EXPECT_LT(static_cast<double>(maxCount) / static_cast<double>(minCount), 1.5);
+  EXPECT_LT(static_cast<float>(maxCount) / static_cast<float>(minCount), 1.5);
 }
 
 } // namespace

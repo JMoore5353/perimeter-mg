@@ -22,14 +22,14 @@ namespace perimeter::environment
 
 struct StepResult
 {
-  std::vector<double> rewards;
+  std::vector<float> rewards;
   std::vector<int> capturedAttackerIds;
   std::vector<int> baseArrivalAttackerIds;
   std::vector<int> respawnedAttackerIds;
 };
 
-double captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept;
-bool isCaptureSuccessful(std::size_t defenderCount, double roll) noexcept;
+float captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept;
+bool isCaptureSuccessful(std::size_t defenderCount, float roll) noexcept;
 
 StepResult stepWorld(core::WorldState& world, const std::vector<Action>& jointActions,
                      const geometry::Grid& grid, std::mt19937& rng);

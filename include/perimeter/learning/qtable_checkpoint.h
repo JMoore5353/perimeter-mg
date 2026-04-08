@@ -27,7 +27,7 @@ struct CheckpointMetadata
   int agentId;               // Agent identifier (must match learner ID when loading)
   core::AgentType agentType; // ATTACKER or DEFENDER (enforces type safety)
   int numAgents;             // Total agents in scenario (must match when loading)
-  double gamma;              // Discount factor (must match when loading)
+  float gamma;              // Discount factor (must match when loading)
   int radius;                // Hex grid radius
   int attackerCount;         // Number of attackers in scenario
   int defenderCount;         // Number of defenders in scenario
@@ -114,7 +114,7 @@ public:
    * @throws std::runtime_error if directory cannot be created or any save fails
    */
   static void saveAll(const std::vector<NashQLearning>& learners,
-                      const environment::InitializationConfig& config, double gamma, int stepNumber,
+                      const environment::InitializationConfig& config, float gamma, int stepNumber,
                       const std::string& baseDir = "qtables");
 
   /**

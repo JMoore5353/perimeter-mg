@@ -17,7 +17,7 @@ namespace perimeter
 
 // Type aliases for Q-table structures
 using QTable =
-  std::unordered_map<JointState, std::unordered_map<JointAction, double, ActionVectorHash>,
+  std::unordered_map<JointState, std::unordered_map<JointAction, float, ActionVectorHash>,
                      StateVectorHash>;
 using NsTable = std::unordered_map<JointState, int, StateVectorHash>;
 using NsaTable =
@@ -27,14 +27,14 @@ using NsaTable =
 class NashQLearning
 {
 public:
-  NashQLearning(int id, int numAgents, double gamma, const JointActionSpace& jointActionSpace,
+  NashQLearning(int id, int numAgents, float gamma, const JointActionSpace& jointActionSpace,
                 core::AgentType agentType);
 
-  const std::function<double(JointState, JointAction)> getRewardFunction();
+  const std::function<float(JointState, JointAction)> getRewardFunction();
   int getId() const { return id_; }
   core::AgentType getAgentType() const { return agentType_; }
   int getNumAgents() const { return numAgents_; }
-  double getGamma() const { return gamma_; }
+  float getGamma() const { return gamma_; }
   const auto& getQTable() const { return Q_s_a_; }
   const auto& getNsTable() const { return N_s_; }
   const auto& getNsaTable() const { return N_s_a_; }
@@ -54,7 +54,7 @@ private:
   int id_;
   core::AgentType agentType_;
   int numAgents_;
-  double gamma_;
+  float gamma_;
   SingleAgentSimpleGamePolicy randomPolicy_;
   SingleAgentSimpleGamePolicy policy_;
   const JointActionSpace& jointActionSpace_;
@@ -63,16 +63,16 @@ private:
   std::unordered_map<JointState, std::unordered_map<JointAction, int, ActionVectorHash>,
                      StateVectorHash>
     N_s_a_;
-  std::unordered_map<JointState, std::unordered_map<JointAction, double, ActionVectorHash>,
+  std::unordered_map<JointState, std::unordered_map<JointAction, float, ActionVectorHash>,
                      StateVectorHash>
     Q_s_a_;
 
-  double computeInitialQTableValue(const JointState& state, const JointAction& jointAction) const;
+  float computeInitialQTableValue(const JointState& state, const JointAction& jointAction) const;
   int N(const JointState& state, const JointAction& jointAction);
-  double Q(const JointState& state, const JointAction& jointAction);
+  float Q(const JointState& state, const JointAction& jointAction);
 };
 
-double jointActionProbability(const JointPolicy& jointPolicy, const JointAction& jointAction);
+float jointActionProbability(const JointPolicy& jointPolicy, const JointAction& jointAction);
 
 } // namespace perimeter
 

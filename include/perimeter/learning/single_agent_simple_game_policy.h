@@ -15,14 +15,14 @@ namespace perimeter
 class SingleAgentSimpleGamePolicy
 {
 public:
-  SingleAgentSimpleGamePolicy(const std::vector<double>& weights);
+  SingleAgentSimpleGamePolicy(const std::vector<float>& weights);
   SingleAgentSimpleGamePolicy(environment::Action deterministicAction);
 
   environment::Action sampleAction(std::mt19937& rg);
-  double getProbability(const environment::Action action) const;
+  float getProbability(const environment::Action action) const;
 
 private:
-  std::vector<double> weights_;
+  std::vector<float> weights_;
   std::discrete_distribution<int> dist_;
 };
 

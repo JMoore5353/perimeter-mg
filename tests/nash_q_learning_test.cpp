@@ -24,7 +24,7 @@ public:
 protected:
   int id{0};
   int numAgents{2};
-  double gamma{0.9};
+  float gamma{0.9};
   JointActionSpace jointActionSpace{numAgents};
   core::AgentType agentType = core::AgentType::ATTACKER;
   NashQLearning q;
@@ -42,8 +42,8 @@ protected:
 
 TEST_F(QLearnerTest, GetRewardFunctionReturnsAccessToQTable)
 {
-  double qVal0{10.0};
-  double qVal1{10.0};
+  float qVal0{10.0};
+  float qVal1{10.0};
   QTable qTable;
   qTable[jointState][action0] = qVal0;
   qTable[jointState][action1] = qVal1;
@@ -51,8 +51,8 @@ TEST_F(QLearnerTest, GetRewardFunctionReturnsAccessToQTable)
 
   auto rewardFunc = q.getRewardFunction();
 
-  double reward0 = rewardFunc(jointState, action0);
-  double reward1 = rewardFunc(jointState, action1);
+  float reward0 = rewardFunc(jointState, action0);
+  float reward1 = rewardFunc(jointState, action1);
   ASSERT_EQ(reward0, qVal0);
   ASSERT_EQ(reward1, qVal1);
 }
@@ -105,17 +105,17 @@ TEST_F(QLearnerTest, NTablesInitializeToZero)
 TEST(QLearningJointProbability, JointProbabilityReturnsCorrectValues)
 {
   // Use only the first two actions for simplicity
-  JointPolicy jp{SingleAgentSimpleGamePolicy{std::vector<double>{1.0, 0.0}},
-                 SingleAgentSimpleGamePolicy{std::vector<double>{0.5, 0.5}}};
+  JointPolicy jp{SingleAgentSimpleGamePolicy{std::vector<float>{1.0, 0.0}},
+                 SingleAgentSimpleGamePolicy{std::vector<float>{0.5, 0.5}}};
   JointAction ja0{environment::Action::EAST, environment::Action::EAST};
   JointAction ja1{environment::Action::EAST, environment::Action::NORTHEAST};
   JointAction ja2{environment::Action::NORTHEAST, environment::Action::NORTHEAST};
   JointAction ja3{environment::Action::NORTHEAST, environment::Action::EAST};
 
-  double prob0 = jointActionProbability(jp, ja0);
-  double prob1 = jointActionProbability(jp, ja1);
-  double prob2 = jointActionProbability(jp, ja2);
-  double prob3 = jointActionProbability(jp, ja3);
+  float prob0 = jointActionProbability(jp, ja0);
+  float prob1 = jointActionProbability(jp, ja1);
+  float prob2 = jointActionProbability(jp, ja2);
+  float prob3 = jointActionProbability(jp, ja3);
 
   ASSERT_EQ(prob0, 0.5);
   ASSERT_EQ(prob1, 0.5);
@@ -133,13 +133,13 @@ TEST_F(QLearnerTest, EpsGreedyPolicyReturnsCorrectValues)
   ASSERT_EQ(ns[jointState], stateCount); // Important since eps = 1 / N(s)
 
   std::mt19937 rng{3U};
-  std::vector<double> policyWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
+  std::vector<float> policyWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
   SingleAgentSimpleGamePolicy policy{policyWeights};
   JointPolicy jp{policy, policy};
   q.setEquilibriumPolicy(jp);
 
   int totalActions{1000};
-  std::unordered_map<environment::Action, double> actionCount;
+  std::unordered_map<environment::Action, float> actionCount;
   for (int i{0}; i < totalActions; ++i) {
     environment::Action action = q.sampleEpsGreedyPolicy(rng, jointState);
     if (!actionCount.contains(action)) {
@@ -158,13 +158,13 @@ TEST_F(QLearnerTest, EpsGreedyPolicyReturnsCorrectValues)
 TEST_F(QLearnerTest, EpsGreedyPolicyReturnsCorrectValuesWhenNotVisitedState)
 {
   std::mt19937 rng{3U};
-  std::vector<double> policyWeights{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+  std::vector<float> policyWeights{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
   SingleAgentSimpleGamePolicy policy{policyWeights};
   JointPolicy jp{policy, policy};
   q.setEquilibriumPolicy(jp);
 
   int totalActions{1000};
-  std::unordered_map<environment::Action, double> actionCount;
+  std::unordered_map<environment::Action, float> actionCount;
   for (int i{0}; i < totalActions; ++i) {
     environment::Action action = q.sampleEpsGreedyPolicy(rng, jointState);
     if (!actionCount.contains(action)) {
@@ -173,7 +173,7 @@ TEST_F(QLearnerTest, EpsGreedyPolicyReturnsCorrectValuesWhenNotVisitedState)
     actionCount[action]++;
   }
 
-  double expectedProb = 1.0 / static_cast<double>(environment::Action::NUM_ACTIONS);
+  float expectedProb = 1.0 / static_cast<float>(environment::Action::NUM_ACTIONS);
   for (int i{0}; i < policyWeights.size(); ++i) {
     auto action = static_cast<environment::Action>(i);
     // Since there is techncally an eps greedy part in there (should be rather small)
@@ -183,8 +183,8 @@ TEST_F(QLearnerTest, EpsGreedyPolicyReturnsCorrectValuesWhenNotVisitedState)
 
 TEST_F(QLearnerTest, ExpectJointQTableToUpdateCorrectly)
 {
-  double qVal0{10.0};
-  double qVal1{10.0};
+  float qVal0{10.0};
+  float qVal1{10.0};
   QTable qTable;
   qTable[jointState][action0] = qVal0;
   qTable[jointState][action1] = qVal1;
@@ -194,7 +194,7 @@ TEST_F(QLearnerTest, ExpectJointQTableToUpdateCorrectly)
   EXPECT_EQ(q.getQTable(), qTable);
 
   JointReward rewards{10.0, -10.0};
-  std::vector<double> policyWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
+  std::vector<float> policyWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
   JointPolicy jointPolicy{SingleAgentSimpleGamePolicy{policyWeights},
                           SingleAgentSimpleGamePolicy{policyWeights}};
 
@@ -206,7 +206,7 @@ TEST_F(QLearnerTest, ExpectJointQTableToUpdateCorrectly)
   // New Q Table initializes all joint actions to zero for a given state, so can't directly compare
   auto newMap = newQTable[jointState1];
   auto oldMap = qTable[jointState1];
-  for (const std::pair<JointAction, double>& entry : newMap) {
+  for (const std::pair<JointAction, float>& entry : newMap) {
     if (oldMap.contains(entry.first)) {
       EXPECT_EQ(oldMap[entry.first], entry.second);
     } else {

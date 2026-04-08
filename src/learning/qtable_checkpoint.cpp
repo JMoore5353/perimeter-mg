@@ -98,7 +98,8 @@ void QTableCheckpoint::writeHeader(std::ofstream& out, const CheckpointMetadata&
 CheckpointMetadata QTableCheckpoint::readHeader(std::ifstream& in)
 {
   // Read header size bytes
-  std::size_t headerSize = 5 + 4 + 8 + 4 + 1 + 4 + 8 + 4 + 4 + 4;
+  // magic(5) + version(4) + timestamp(8) + agentId(4) + agentType(1) + numAgents(4) + gamma(4) + radius(4) + attackerCount(4) + defenderCount(4)
+  std::size_t headerSize = 5 + 4 + 8 + 4 + 1 + 4 + 4 + 4 + 4 + 4;
   std::vector<std::uint8_t> headerData(headerSize);
   in.read(reinterpret_cast<char*>(headerData.data()), headerSize);
 
@@ -121,7 +122,7 @@ CheckpointMetadata QTableCheckpoint::readHeader(std::ifstream& in)
   metadata.agentId = reader.read<std::int32_t>();
   metadata.agentType = static_cast<core::AgentType>(reader.read<std::uint8_t>());
   metadata.numAgents = reader.read<std::int32_t>();
-  metadata.gamma = reader.read<double>();
+  metadata.gamma = reader.read<float>();
   metadata.radius = reader.read<std::int32_t>();
   metadata.attackerCount = reader.read<std::int32_t>();
   metadata.defenderCount = reader.read<std::int32_t>();
@@ -248,7 +249,7 @@ void QTableCheckpoint::writeQTable(std::ofstream& out, const QTable& table)
 
     for (const auto& [action, qValue] : innerMap) {
       writeJointAction(out, action);
-      out.write(reinterpret_cast<const char*>(&qValue), sizeof(double));
+      out.write(reinterpret_cast<const char*>(&qValue), sizeof(float));
     }
   }
 }
@@ -265,11 +266,11 @@ void QTableCheckpoint::readQTable(std::ifstream& in, QTable& table)
     std::size_t innerSize;
     in.read(reinterpret_cast<char*>(&innerSize), sizeof(std::size_t));
 
-    std::unordered_map<JointAction, double, ActionVectorHash> innerMap;
+    std::unordered_map<JointAction, float, ActionVectorHash> innerMap;
     for (std::size_t j = 0; j < innerSize; ++j) {
       JointAction action = readJointAction(in);
-      double qValue;
-      in.read(reinterpret_cast<char*>(&qValue), sizeof(double));
+      float qValue;
+      in.read(reinterpret_cast<char*>(&qValue), sizeof(float));
       innerMap[action] = qValue;
     }
 
@@ -570,7 +571,7 @@ void QTableCheckpoint::load(NashQLearning& learner, const std::string& filepath,
 
 // Save all agents in parallel
 void QTableCheckpoint::saveAll(const std::vector<NashQLearning>& learners,
-                               const environment::InitializationConfig& config, double gamma,
+                               const environment::InitializationConfig& config, float gamma,
                                int stepNumber, const std::string& baseDir)
 {
   std::filesystem::create_directories(baseDir);

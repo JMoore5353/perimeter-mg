@@ -84,8 +84,8 @@ JointPolicy getRandomJointPolicy(std::mt19937& rng, const std::size_t numAgents)
 {
   return JointPolicy(
     numAgents,
-    std::vector<double>(static_cast<int>(environment::Action::NUM_ACTIONS),
-                        1 / static_cast<double>(environment::Action::NUM_ACTIONS)));
+    std::vector<float>(static_cast<int>(environment::Action::NUM_ACTIONS),
+                        1 / static_cast<float>(environment::Action::NUM_ACTIONS)));
 }
 
 void runSim(const SimConfig& simConfig)
@@ -110,7 +110,7 @@ void runSim(const SimConfig& simConfig)
 
   std::cout << "Computing joint action space...";
   int numAgents = simulator.world().agents.size();
-  double gamma = 0.9;
+  float gamma = 0.9;
   JointActionSpace jointActionSpace{numAgents};
   std::cout << " Done!" << std::endl;
   std::vector<NashQLearning> qLearners;
@@ -145,7 +145,7 @@ void runSim(const SimConfig& simConfig)
   std::vector<core::AgentState> currAgentStates = simulator.world().agents;
   std::vector<core::AgentState> prevAgentStates = currAgentStates;
   JointAction prevJointAction(numAgents, environment::Action::STAY);
-  std::vector<double> stepRewards(numAgents, 0.0);
+  std::vector<float> stepRewards(numAgents, 0.0);
   while (t <= simConfig.endT) {
     std::ostringstream outPrefix;
     outPrefix << "\rStarting simulation step " << t << "...";
@@ -221,7 +221,7 @@ void runSim(const SimConfig& simConfig)
   // Timing analysis
   std::cout << "Solve times: "
             << std::accumulate(solveTimes.begin(), solveTimes.end(), 0.0)
-      / static_cast<double>(solveTimes.size())
+      / static_cast<float>(solveTimes.size())
             << std::endl;
 
   outFile.close();

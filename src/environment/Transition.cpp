@@ -16,7 +16,7 @@ namespace
 
 using IdSet = std::unordered_set<int>;
 using IdToIndex = std::unordered_map<int, std::size_t>;
-using RewardById = std::unordered_map<int, double>;
+using RewardById = std::unordered_map<int, float>;
 
 struct CaptureRecord
 {
@@ -90,7 +90,7 @@ std::vector<CaptureRecord> resolveCaptures(const core::WorldState& world,
                                            IdSet& capturedIds)
 {
   std::vector<CaptureRecord> records;
-  std::uniform_real_distribution<double> distribution(0.0, 1.0);
+  std::uniform_real_distribution<float> distribution(0.0, 1.0);
 
   for (const auto& entry : world.occupancy) {
     const std::vector<int>& ids = entry.second;
@@ -140,8 +140,8 @@ void applyAttackerCapturePenalty(const IdSet& capturedIds, RewardById& rewardByI
 void applyDefenderCaptureRewards(const std::vector<CaptureRecord>& records, RewardById& rewardById)
 {
   for (const CaptureRecord& record : records) {
-    const double rewardShare = static_cast<double>(record.capturedAttackerCount)
-      / static_cast<double>(record.defenderIds.size());
+    const float rewardShare = static_cast<float>(record.capturedAttackerCount)
+      / static_cast<float>(record.defenderIds.size());
     for (const int defenderId : record.defenderIds) {
       rewardById[defenderId] += DEFENDER_CAPTURE_PER_ATTACKER_BONUS * rewardShare;
     }
@@ -173,19 +173,19 @@ void applyExpectedCaptureRewards(const core::WorldState& world, const IdToIndex&
       continue;
     }
 
-    const double captureProb = captureProbabilityForDefenderCount(defenders.size());
-    const double expectedCapturedCount = captureProb * static_cast<double>(attackers.size());
+    const float captureProb = captureProbabilityForDefenderCount(defenders.size());
+    const float expectedCapturedCount = captureProb * static_cast<float>(attackers.size());
 
     // Apply expected attacker capture penalty
-    const double attackerExpectedReward = captureProb * ATTACKER_CAPTURE_REWARD;
+    const float attackerExpectedReward = captureProb * ATTACKER_CAPTURE_REWARD;
     for (const int attackerId : attackers) {
       rewardById[attackerId] += attackerExpectedReward;
     }
 
     // Apply expected defender capture rewards
-    const double defenderRewardShare =
-      expectedCapturedCount / static_cast<double>(defenders.size());
-    const double defenderExpectedReward = DEFENDER_CAPTURE_PER_ATTACKER_BONUS * defenderRewardShare;
+    const float defenderRewardShare =
+      expectedCapturedCount / static_cast<float>(defenders.size());
+    const float defenderExpectedReward = DEFENDER_CAPTURE_PER_ATTACKER_BONUS * defenderRewardShare;
     for (const int defenderId : defenders) {
       rewardById[defenderId] += defenderExpectedReward;
     }
@@ -274,7 +274,7 @@ void finalizeStep(core::WorldState& world, const IdToIndex& idToIndex, const Rew
 
 } // namespace
 
-double captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept
+float captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept
 {
   if (defenderCount == 1) {
     return 0.7;
@@ -288,9 +288,9 @@ double captureProbabilityForDefenderCount(std::size_t defenderCount) noexcept
   return 0.0;
 }
 
-bool isCaptureSuccessful(std::size_t defenderCount, double roll) noexcept
+bool isCaptureSuccessful(std::size_t defenderCount, float roll) noexcept
 {
-  const double probability = captureProbabilityForDefenderCount(defenderCount);
+  const float probability = captureProbabilityForDefenderCount(defenderCount);
   return roll < probability;
 }
 

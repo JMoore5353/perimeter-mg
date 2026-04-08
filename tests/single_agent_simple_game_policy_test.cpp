@@ -21,7 +21,7 @@ TEST(SimpleGamePolicy, TestDeterministicActionIsDeterministic)
 
 TEST(SimpleGamePolicy, TestRandomActionsHaveCorrectFrequency)
 {
-  std::vector<double> weights = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
+  std::vector<float> weights = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
   SingleAgentSimpleGamePolicy policy(weights);
   std::mt19937 rg(3);
 
@@ -33,20 +33,20 @@ TEST(SimpleGamePolicy, TestRandomActionsHaveCorrectFrequency)
   }
 
   for (int i{0}; i < weights.size(); ++i) {
-    double experimentalFrequency = static_cast<double>(countFreq[i]) / totalRuns;
+    float experimentalFrequency = static_cast<float>(countFreq[i]) / totalRuns;
     EXPECT_NEAR(experimentalFrequency, weights[i], 0.05);
   }
 }
 
 TEST(SimpleGamePolicy, WeightsAreNormalizedCorrectly)
 {
-  std::vector<double> weights{1, 1, 1, 1, 1, 1, 4};
+  std::vector<float> weights{1, 1, 1, 1, 1, 1, 4};
   SingleAgentSimpleGamePolicy policy{weights};
-  std::vector<double> normalizedWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
+  std::vector<float> normalizedWeights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
 
   for (int i = 0; i < static_cast<int>(environment::Action::NUM_ACTIONS); ++i) {
     environment::Action action = static_cast<environment::Action>(i);
-    double prob = policy.getProbability(action);
+    float prob = policy.getProbability(action);
 
     EXPECT_EQ(normalizedWeights[i], prob);
   }
@@ -54,12 +54,12 @@ TEST(SimpleGamePolicy, WeightsAreNormalizedCorrectly)
 
 TEST(SimpleGamePolicy, TestGetProbabilityReturnsCorrectProbability)
 {
-  std::vector<double> weights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
+  std::vector<float> weights{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4};
   SingleAgentSimpleGamePolicy policy{weights};
 
   for (int i = 0; i < static_cast<int>(environment::Action::NUM_ACTIONS); ++i) {
     environment::Action action = static_cast<environment::Action>(i);
-    double prob = policy.getProbability(action);
+    float prob = policy.getProbability(action);
 
     EXPECT_EQ(weights[i], prob);
   }

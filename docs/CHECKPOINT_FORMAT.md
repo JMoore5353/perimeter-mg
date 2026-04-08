@@ -42,7 +42,7 @@ The header is the first section of the uncompressed payload:
 | agentId        | int32_t    | 4            | Agent identifier                         |
 | agentType      | uint8_t    | 1            | 0=ATTACKER, 1=DEFENDER                   |
 | numAgents      | int32_t    | 4            | Total agents in scenario                 |
-| gamma          | double     | 8            | Discount factor                          |
+| gamma          | float     | 4            | Discount factor                          |
 | radius         | int32_t    | 4            | Hex grid radius                          |
 | attackerCount  | int32_t    | 4            | Number of attackers                      |
 | defenderCount  | int32_t    | 4            | Number of defenders                      |
@@ -103,7 +103,7 @@ Action enum values:
 
 ### Q-Table (Q_s_a_)
 
-The Q-table maps (JointState, JointAction) pairs to Q-values (double):
+The Q-table maps (JointState, JointAction) pairs to Q-values (float):
 
 ```
 ┌──────────────────────┐

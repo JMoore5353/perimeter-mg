@@ -383,7 +383,7 @@ JointPolicy NashEquilibriumSolver::solve(const JointRewardFunction& R,
     std::cerr << "Ipopt solve failed with status: " << status << std::endl;
     // Return uniform policy as fallback
     JointPolicy policy;
-    std::vector<double> uniformWeights(numActions, 1.0 / numActions);
+    std::vector<float> uniformWeights(numActions, 1.0 / numActions);
     for (int i = 0; i < numAgents; ++i) {
       policy.push_back(SingleAgentSimpleGamePolicy(uniformWeights));
     }
@@ -395,7 +395,7 @@ JointPolicy NashEquilibriumSolver::solve(const JointRewardFunction& R,
   JointPolicy policy;
 
   for (int i = 0; i < numAgents; ++i) {
-    std::vector<double> agentPolicy(numActions);
+    std::vector<float> agentPolicy(numActions);
     for (int a = 0; a < numActions; ++a) {
       agentPolicy[a] = solution[i * numActions + a];
     }

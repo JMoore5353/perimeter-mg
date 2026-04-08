@@ -227,19 +227,29 @@ Apparently, in these states, the Nash equilibrium results in a policy of both ag
 
 After a while, the agents eventually start moving again, maybe due to the reward function (based on the Q-table) converging to a different value, or a non-STAY action being drawn from the equilibrium policy.
 
-#### 1 attacker, 2 defenders
+#### 1 attacker, 3 defenders
 
+
+> [!NOTE]
+> To fully fill all 4 Q-tables for the agents, it would take 144.0 GB of RAM, assuming the Q-tables are held in RAM during program operation and that they are filled with 64-bit floating point numbers.
 
 #### 2 attackers, 3 defenders
+
+
+
+> [!NOTE]
+> To fully fill all 5 Q-tables for the agents, it would take 46.6 TB of RAM, assuming the Q-tables are held in RAM during program operation and that they are filled with 64-bit floating point numbers.
+>
+> That's why I only ran this simulation for 8000 steps... While it didn't run to completely optimal policies, I realized I didn't have enough memory to complete enough of the Q-table.
 
 
 ### Curse of dimensionality
 One of the main challenges with this approach is computational complexity and the curse of dimensionality.
 Nash Q-learning relies on a Q-table, which tabulates the value of state-action pairs.
-In the single agent case, there are $O(|S||A|)$ of these state-action pairs.
+In the single agent case, there are $|S||A|$ of these state-action pairs.
 In the multi-agent case, these are **joint** state and **joint** action pairs, so now $S= S^0 \times S^1 \times \dots \times S^n$ and $A=A^0 \times A^1 \times \dots \times A^n$.
 
-Thus, for PerimeterMG on a hex world grid of radius 3, there are 37 states that each agent can occupy, and 7 actions, resulting in $|S|=37^n$ and $|A|=7^n$.
+Thus, for PerimeterMG on a hex world grid of radius 3, there are 37 states that each agent can occupy, and 7 actions, resulting in $|S|=37^n$ and $|A|=7^n$, so $37^n7^n$ entries in the Q-table.
 For even just 3 agents, each agent's Q-table is a $37^3$ by $7^3$ matrix, having 17373979 entries.
 
 To reach convergence for the entire Q-table, I would have to run many simulation steps for each of the more than 17 million Q-table entries--just for the 3-agent case.

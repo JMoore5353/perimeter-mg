@@ -35,7 +35,7 @@ struct ActionVectorHash
 };
 
 using JointPolicy = std::vector<SingleAgentSimpleGamePolicy>;
-using JointReward = std::vector<double>;
+using JointReward = std::vector<float>;
 
 using JointState = std::vector<core::AgentState>;
 struct StateVectorHash
@@ -57,7 +57,7 @@ struct StateVectorHash
   }
 };
 
-using JointRewardFunction = std::vector<std::function<double(JointState, JointAction)>>;
+using JointRewardFunction = std::vector<std::function<float(JointState, JointAction)>>;
 
 class JointActionSpace
 {

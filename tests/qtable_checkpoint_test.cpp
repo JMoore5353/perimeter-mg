@@ -39,7 +39,7 @@ TEST_F(QTableCheckpointTest, SaveAndLoadBasic)
   int agentId = 0;
   AgentType agentType = AgentType::ATTACKER;
   int numAgents = 3;
-  double gamma = 0.95;
+  float gamma = 0.95;
 
   JointActionSpace actionSpace(numAgents);
   NashQLearning learner(agentId, numAgents, gamma, actionSpace, agentType);
@@ -78,8 +78,8 @@ TEST_F(QTableCheckpointTest, SaveAndLoadBasic)
   const auto& loadedQTable = loadedLearner.getQTable();
   EXPECT_EQ(loadedQTable.size(), 1);
   EXPECT_TRUE(loadedQTable.count(state1) > 0);
-  EXPECT_DOUBLE_EQ(loadedQTable.at(state1).at(action1), 10.5);
-  EXPECT_DOUBLE_EQ(loadedQTable.at(state1).at(action2), 20.3);
+  EXPECT_FLOAT_EQ(loadedQTable.at(state1).at(action1), 10.5);
+  EXPECT_FLOAT_EQ(loadedQTable.at(state1).at(action2), 20.3);
 }
 
 TEST_F(QTableCheckpointTest, MetadataValidation)
@@ -87,7 +87,7 @@ TEST_F(QTableCheckpointTest, MetadataValidation)
   int agentId = 1;
   AgentType agentType = AgentType::DEFENDER;
   int numAgents = 3;
-  double gamma = 0.95;
+  float gamma = 0.95;
 
   JointActionSpace actionSpace(numAgents);
   NashQLearning learner(agentId, numAgents, gamma, actionSpace, agentType);
@@ -122,7 +122,7 @@ TEST_F(QTableCheckpointTest, LoadWithoutValidation)
   int agentId = 0;
   AgentType agentType = AgentType::ATTACKER;
   int numAgents = 3;
-  double gamma = 0.95;
+  float gamma = 0.95;
 
   JointActionSpace actionSpace(numAgents);
   NashQLearning learner(agentId, numAgents, gamma, actionSpace, agentType);
@@ -151,7 +151,7 @@ TEST_F(QTableCheckpointTest, ReadMetadata)
   int agentId = 2;
   AgentType agentType = AgentType::DEFENDER;
   int numAgents = 3;
-  double gamma = 0.9;
+  float gamma = 0.9;
 
   JointActionSpace actionSpace(numAgents);
   NashQLearning learner(agentId, numAgents, gamma, actionSpace, agentType);
@@ -176,7 +176,7 @@ TEST_F(QTableCheckpointTest, ReadMetadata)
   EXPECT_EQ(loaded.agentId, agentId);
   EXPECT_EQ(loaded.agentType, agentType);
   EXPECT_EQ(loaded.numAgents, numAgents);
-  EXPECT_DOUBLE_EQ(loaded.gamma, gamma);
+  EXPECT_FLOAT_EQ(loaded.gamma, gamma);
   EXPECT_EQ(loaded.radius, 7);
   EXPECT_EQ(loaded.attackerCount, 2);
   EXPECT_EQ(loaded.defenderCount, 1);
@@ -189,7 +189,7 @@ TEST_F(QTableCheckpointTest, EmptyQTable)
   int agentId = 0;
   AgentType agentType = AgentType::ATTACKER;
   int numAgents = 3;
-  double gamma = 0.95;
+  float gamma = 0.95;
 
   JointActionSpace actionSpace(numAgents);
   NashQLearning learner(agentId, numAgents, gamma, actionSpace, agentType);
@@ -238,7 +238,7 @@ TEST_F(QTableCheckpointTest, ParallelSaveAll)
 {
   // Create multiple agents with some Q-table data
   int numAgents = 3;
-  double gamma = 0.95;
+  float gamma = 0.95;
   JointActionSpace actionSpace(numAgents);
 
   std::vector<NashQLearning> learners;
