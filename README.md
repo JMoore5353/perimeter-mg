@@ -230,6 +230,13 @@ Apparently, in these states, the Nash equilibrium results in a policy of both ag
 
 After a while, the agents eventually start moving again, maybe due to the reward function (based on the Q-table) converging to a different value, or a non-STAY action being drawn from the equilibrium policy.
 
+Out of curiosity, I trained this scenario for 200,000 additional simulation steps.
+After roughly 62,000 additional steps, the output is as shown below.
+The agents do learn to interact better, with the defender chasing the attacker.
+Also note that after 100,000 additional simulation steps, the agents reach the same deadlock shown at the beginning of the previous video, and remain there for the rest of the simulation steps.
+
+https://github.com/user-attachments/assets/1e572f44-5cb5-49ca-a51e-ec1787f58d47
+
 #### 1 attacker, 3 defenders
 In this scenario, I launched 1 attacker and 3 defenders, and trained it for about 103,000 training steps.
 However, for just 4 agents, each agent's Q-table would require 4,499,860,561 joint state-joint action pairs.
