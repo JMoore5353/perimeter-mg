@@ -171,7 +171,11 @@ void runSim(const SimConfig& simConfig)
       agent.setEquilibriumPolicy(jointPolicy);
       agent.updateJointQTable(prevAgentStates, prevJointAction, stepRewards, currAgentStates,
                               jointPolicy);
-      jointAction.push_back(agent.sampleEpsGreedyPolicy(rng, currAgentStates));
+      if (agent.getAgentType() == core::AgentType::DEFENDER) {
+        jointAction.push_back(environment::Action::STAY);
+      } else {
+        jointAction.push_back(agent.sampleEpsGreedyPolicy(rng, currAgentStates));
+      }
     }
 
     // Update N counts
