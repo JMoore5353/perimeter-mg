@@ -1,4 +1,7 @@
-<img width="2912" height="1440" alt="cover_img" src="https://github.com/user-attachments/assets/16b810d1-05aa-4f3e-a5aa-4b79443e5461" />
+# PerimeterMG
+<!-- <img width="2912" height="1440" alt="cover_img" src="https://github.com/user-attachments/assets/16b810d1-05aa-4f3e-a5aa-4b79443e5461" /> -->
+
+<img width="1091" height="566" alt="example_sim_2a_3d_3r_cropped" src="https://github.com/user-attachments/assets/7244b245-21a5-4851-9109-431aaa5089fe" />
 
 This repo contains a C++ based simulation environment to run **PerimeterMG**, a border-protection Markov game.
 The scenario is based on the *predator-prey hex world* scenario from the *Algorithms for Decision Making* book by Kochenderfer, et al, and is a good environment to learn about game-theoretic approaches to decision problems.
@@ -35,16 +38,16 @@ Then, we'll run the Python visualizer that uses the output files.
 cd ~/path/to/cloned/perimeter-mg
 
 # Use --help to see all CLI options
-./build/perimeter_mg --steps 500 --hex-radius 3 --num-attackers 1 --num-defenders 1
+./build/perimeter_mg --help
 ```
 
 Then, run
 ```bash
 # Use --help to see all CLI options
-python3 scripts/visualize_sim.py --delay 0.1
+python3 scripts/visualize_sim.py --help
 ```
 
-At this point, you will see the visualizer show up with the hex world and a reward plot.
+Running the Python script will launch the visualizer with the hex world and a reward plot.
 
 ### Replicating results from this write-up
 To replicate the single attacker results, use
@@ -163,7 +166,7 @@ $$
 U^i(s) = \sum_{a^\prime \in {A}} Q(s, a^\prime) \prod_{j\in {I}} \pi^{j\prime}(a^{j\prime})
 $$
 
-where $\pi^{j\prime}$ is the $j\text{th}$ agent's policy (computed from before), and ${A}$ is the joint action space.
+where $\pi^{j\prime}$ is the $j\text{th}$ agent's equilibrium policy, and ${A}$ is the joint action space.
 The learning rate $\alpha$ is computed using $\alpha = 1 / \sqrt{N(s, a)}$, where $N(s,a)$ is the state-action count.
 
 The Q-table is then updated with
@@ -228,14 +231,25 @@ Apparently, in these states, the Nash equilibrium results in a policy of both ag
 After a while, the agents eventually start moving again, maybe due to the reward function (based on the Q-table) converging to a different value, or a non-STAY action being drawn from the equilibrium policy.
 
 #### 1 attacker, 3 defenders
+In this scenario, I launched 1 attacker and 3 defenders, and trained it for about 103,000 training steps.
+However, for just 4 agents, each agent's Q-table would require 4,499,860,561 joint state-joint action pairs.
+This means 103,000 training steps is insufficient for this problem size.
 
+With an $\epsilon\text{-greedy}$ exploration strategy, we see many random movements in the demo.
+However, in some cases, we see the defenders chasing the attackers and the attackers evading the defenders.
+
+https://github.com/user-attachments/assets/7a49b253-6b26-4fc8-b112-52acfbac8bce
 
 > [!NOTE]
 > To fully fill all 4 Q-tables for the agents, it would take 144.0 GB of RAM, assuming the Q-tables are held in RAM during program operation and that they are filled with 64-bit floating point numbers.
 
 #### 2 attackers, 3 defenders
+This scenario contains 2 attackers and 3 defenders.
+However, training was too slow and the required memory too high for training to continue past ~8000 simulation steps.
 
+This is far too few training steps to see anything but the random exploration policy, as can bee seen in the video below. 
 
+https://github.com/user-attachments/assets/e24431ff-2258-4fa1-8920-eeb23f663c37
 
 > [!NOTE]
 > To fully fill all 5 Q-tables for the agents, it would take 46.6 TB of RAM, assuming the Q-tables are held in RAM during program operation and that they are filled with 64-bit floating point numbers.
@@ -246,7 +260,7 @@ After a while, the agents eventually start moving again, maybe due to the reward
 ### Curse of dimensionality
 One of the main challenges with this approach is computational complexity and the curse of dimensionality.
 Nash Q-learning relies on a Q-table, which tabulates the value of state-action pairs.
-In the single agent case, there are $|S||A|$ of these state-action pairs.
+In the single agent case, there are $|S|\times|A|$ of these state-action pairs.
 In the multi-agent case, these are **joint** state and **joint** action pairs, so now $S= S^0 \times S^1 \times \dots \times S^n$ and $A=A^0 \times A^1 \times \dots \times A^n$.
 
 Thus, for PerimeterMG on a hex world grid of radius 3, there are 37 states that each agent can occupy, and 7 actions, resulting in $|S|=37^n$ and $|A|=7^n$, so $37^n7^n$ entries in the Q-table.
