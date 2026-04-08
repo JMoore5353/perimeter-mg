@@ -136,7 +136,7 @@ Other transition models are identical to the hex-world problem in *Algorithms fo
 Attackers are rewarded if they arrive at the base, and are penalized if they are captured.
 Defenders are rewarded for capturing attackers, but are penalized for attackers arriving at the base.
 
-- Defenders move tiles with $R=-0.1$
+- Defenders move tiles with $R=-0.1$, plus $R=-10$ for moving onto a base tile
 - $n$ defenders neutralizing $m$ attackers get $R=\text{BONUS} * m/n$ reward each
 - Defenders get $R=-100$ if attacker makes it to base hex tile
 - Attackers move tiles with $R=0$
